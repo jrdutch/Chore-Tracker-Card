@@ -63,7 +63,10 @@ class ChoreTrackerCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    this._render();
+    if (!this._initialRenderDone) {
+      this._initialRenderDone = true;
+      this._render();
+    }
   }
 
   setConfig(config) {
