@@ -171,9 +171,9 @@ class ChoreTrackerCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>${this._styles()}</style>
-      <div class="card">
+      <ha-card>
         ${this._state.view === 'admin' ? this._renderAdmin() : this._renderMain()}
-      </div>
+      </ha-card>
     `;
     this._attachEvents();
   }
@@ -199,8 +199,8 @@ class ChoreTrackerCard extends HTMLElement {
 
     const poolTab = `
       <button class="member-tab ${activeTab === 'pool' ? 'active' : ''}" data-action="set-tab" data-tab="pool">
-        <span class="tab-avatar pool-icon">🎱</span>
-        <span class="tab-name">Pool</span>
+        <span class="tab-avatar pool-icon">📋</span>
+        <span class="tab-name">Available Chores</span>
         ${poolCount > 0 ? `<span class="tab-badge">${poolCount}</span>` : ''}
       </button>
     `;
@@ -274,7 +274,7 @@ class ChoreTrackerCard extends HTMLElement {
       </div>
       ${allDone && poolAvailable ? `
         <div class="claim-banner" data-action="set-tab" data-tab="pool">
-          🎉 All done! Claim bonus chores from the Pool →
+          🎉 All done! Claim bonus chores from Available Chores →
         </div>
       ` : ''}
     `;
@@ -375,7 +375,7 @@ class ChoreTrackerCard extends HTMLElement {
       <div class="tab-bar admin-tabs">
         <button class="member-tab ${tab === 'chores' ? 'active' : ''}" data-action="admin-tab" data-tab="chores">Chores</button>
         <button class="member-tab ${tab === 'members' ? 'active' : ''}" data-action="admin-tab" data-tab="members">Members</button>
-        <button class="member-tab ${tab === 'pool' ? 'active' : ''}" data-action="admin-tab" data-tab="pool">Pool</button>
+        <button class="member-tab ${tab === 'pool' ? 'active' : ''}" data-action="admin-tab" data-tab="pool">Available Chores</button>
       </div>
       <div class="tab-content">
         ${tab === 'chores' ? this._renderAdminChores() : ''}
@@ -532,7 +532,7 @@ class ChoreTrackerCard extends HTMLElement {
       const chore = isNew ? { title: '', emoji: '', points: 0, dollars: 0 } : pool.find(c => c.id === editing) || {};
       return `
         <div class="edit-form">
-          <div class="form-title">${isNew ? 'Add Pool Chore' : 'Edit Pool Chore'}</div>
+          <div class="form-title">${isNew ? 'Add Available Chore' : 'Edit Available Chore'}</div>
           <label>Title</label>
           <input class="form-input" id="pc-title" value="${this._esc(chore.title || '')}" placeholder="Chore name" />
           <label>Emoji (optional)</label>
@@ -552,7 +552,7 @@ class ChoreTrackerCard extends HTMLElement {
 
     return `
       <div class="admin-section">
-        <button class="primary-btn full-btn" data-action="new-pool-chore">+ Add Pool Chore</button>
+        <button class="primary-btn full-btn" data-action="new-pool-chore">+ Add Available Chore</button>
         ${pool.map(c => {
           const claimer = c.claimedBy ? members.find(m => m.id === c.claimedBy) : null;
           return `
@@ -846,10 +846,7 @@ class ChoreTrackerCard extends HTMLElement {
     return `
       :host { display: block; font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif); }
       * { box-sizing: border-box; }
-      .card {
-        background: var(--ha-card-background, var(--card-background-color, #fff));
-        border-radius: var(--ha-card-border-radius, 12px);
-        box-shadow: var(--ha-card-box-shadow, 0 2px 8px rgba(0,0,0,0.15));
+      ha-card {
         overflow: hidden;
         color: var(--primary-text-color, #333);
         position: relative;
