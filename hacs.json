@@ -1,5 +1,7 @@
 {
   "name": "Chore Tracker Card",
   "render_readme": true,
-  "filename": "chore-tracker-card.js"
+  "filename": "chore-tracker-card.js",
+  "homeassistant": "2023.1.0",
+  "content_in_root": true
 }
