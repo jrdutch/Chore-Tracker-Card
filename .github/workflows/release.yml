@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
+          git push origin "v${{ github.event.inputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: v${{ github.event.inputs.version }}
+          body: |
+            ## Chore Tracker Card v${{ github.event.inputs.version }}
+
+            A Home Assistant custom card for tracking family chores with points and allowance rewards.
+
+            ### Installation via HACS
+            1. Add `https://github.com/jrdutch/Chore-Tracker-Card` as a custom HACS repository (Frontend category)
+            2. Install "Chore Tracker Card"
+            3. Add `/hacsfiles/Chore-Tracker-Card/chore-tracker-card.js` as a JavaScript module resource
+
+            ### Manual Installation
+            1. Download `chore-tracker-card.js` below
+            2. Copy to `/config/www/chore-tracker-card.js`
+            3. Add `/local/chore-tracker-card.js` as a JavaScript module resource in HA
+
+            ### What's included
+            - Family member management with avatars, points, and allowance tracking
+            - Assigned chores with per-member completion state
+            - Chore pool with claim gating (must finish current list first)
+            - Password-protected admin console
+            - Points and dollar rewards with auto-award on completion
+            - Auto emoji matching from 60+ chore keywords; manual override available
+            - Full Home Assistant theme support
+          files: chore-tracker-card.js
+          draft: false
+          prerelease: false
