@@ -1259,11 +1259,15 @@ class ChoreTrackerCard extends HTMLElement {
   }
 }
 
-customElements.define('chore-tracker-card', ChoreTrackerCard);
+if (!customElements.get('chore-tracker-card')) {
+  customElements.define('chore-tracker-card', ChoreTrackerCard);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: 'chore-tracker-card',
-  name: 'Chore Tracker Card',
-  description: 'Track family chores with points and allowance rewards',
-});
+if (!window.customCards.find(c => c.type === 'chore-tracker-card')) {
+  window.customCards.push({
+    type: 'chore-tracker-card',
+    name: 'Chore Tracker Card',
+    description: 'Track family chores with points and allowance rewards',
+  });
+}
