@@ -1,0 +1,14 @@
+{
+  "name": "chore-tracker-card",
+  "version": "1.6.0",
+  "description": "Home Assistant custom card for tracking family chores with points and allowance rewards",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/chore-tracker-card.js --bundle --format=esm --outfile=chore-tracker-card.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "lit": "^3.2.0"
+  }
+}

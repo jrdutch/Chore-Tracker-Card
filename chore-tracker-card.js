@@ -1,147 +1,750 @@
-// Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.5.0';
-console.info(
-  `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
-  'color: white; background: #003366; font-weight: 700;',
-  'color: #003366; background: #4FC3F7; font-weight: 700;'
-);
+// node_modules/@lit/reactive-element/css-tag.js
+var t = globalThis;
+var e = t.ShadowRoot && (void 0 === t.ShadyCSS || t.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
+var s = Symbol();
+var o = /* @__PURE__ */ new WeakMap();
+var n = class {
+  constructor(t3, e4, o5) {
+    if (this._$cssResult$ = true, o5 !== s) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+    this.cssText = t3, this.t = e4;
+  }
+  get styleSheet() {
+    let t3 = this.o;
+    const s4 = this.t;
+    if (e && void 0 === t3) {
+      const e4 = void 0 !== s4 && 1 === s4.length;
+      e4 && (t3 = o.get(s4)), void 0 === t3 && ((this.o = t3 = new CSSStyleSheet()).replaceSync(this.cssText), e4 && o.set(s4, t3));
+    }
+    return t3;
+  }
+  toString() {
+    return this.cssText;
+  }
+};
+var r = (t3) => new n("string" == typeof t3 ? t3 : t3 + "", void 0, s);
+var i = (t3, ...e4) => {
+  const o5 = 1 === t3.length ? t3[0] : e4.reduce((e5, s4, o6) => e5 + ((t4) => {
+    if (true === t4._$cssResult$) return t4.cssText;
+    if ("number" == typeof t4) return t4;
+    throw Error("Value passed to 'css' function must be a 'css' function result: " + t4 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
+  })(s4) + t3[o6 + 1], t3[0]);
+  return new n(o5, t3, s);
+};
+var S = (s4, o5) => {
+  if (e) s4.adoptedStyleSheets = o5.map((t3) => t3 instanceof CSSStyleSheet ? t3 : t3.styleSheet);
+  else for (const e4 of o5) {
+    const o6 = document.createElement("style"), n4 = t.litNonce;
+    void 0 !== n4 && o6.setAttribute("nonce", n4), o6.textContent = e4.cssText, s4.appendChild(o6);
+  }
+};
+var c = e ? (t3) => t3 : (t3) => t3 instanceof CSSStyleSheet ? ((t4) => {
+  let e4 = "";
+  for (const s4 of t4.cssRules) e4 += s4.cssText;
+  return r(e4);
+})(t3) : t3;
 
-const CHORE_EMOJIS = {
-  vacuum: '🧹', vacuuming: '🧹', sweep: '🧹', sweeping: '🧹', mop: '🪣', mopping: '🪣',
-  dust: '🧹', dusting: '🧹', clean: '🧽', cleaning: '🧽', scrub: '🧽', scrubbing: '🧽',
-  wipe: '🧽', wiping: '🧽', wash: '🫧', washing: '🫧', sanitize: '🧴', disinfect: '🧴',
-  dishes: '🍽️', dish: '🍽️', dishwasher: '🍽️', cook: '👨‍🍳', cooking: '👨‍🍳',
-  kitchen: '🍳', trash: '🗑️', garbage: '🗑️', recycling: '♻️', recycle: '♻️',
-  groceries: '🛒', grocery: '🛒', counters: '🧽', counter: '🧽',
-  laundry: '👕', clothes: '👕', fold: '👕', folding: '👕', ironing: '👔', iron: '👔',
-  bathroom: '🚽', toilet: '🚽', shower: '🚿', bath: '🛁', sink: '🚰',
-  lawn: '🌿', mow: '🌿', mowing: '🌿', garden: '🌱', gardening: '🌱', plant: '🌱',
-  water: '💧', watering: '💧', rake: '🍂', raking: '🍂', snow: '❄️',
-  pet: '🐾', dog: '🐕', cat: '🐈', fish: '🐟', feed: '🥣', feeding: '🥣',
-  walk: '🦮', walking: '🦮', litter: '🐱',
-  homework: '📚', study: '📖', studying: '📖', read: '📖', reading: '📖',
-  practice: '🎵', music: '🎵',
-  organize: '📦', organizing: '📦', tidy: '🗂️', tidying: '🗂️', declutter: '📦',
-  sort: '🗂️', sorting: '🗂️', bedroom: '🛏️', bed: '🛏️', room: '🏠',
-  mail: '📬', car: '🚗', window: '🪟', windows: '🪟',
+// node_modules/@lit/reactive-element/reactive-element.js
+var { is: i2, defineProperty: e2, getOwnPropertyDescriptor: h, getOwnPropertyNames: r2, getOwnPropertySymbols: o2, getPrototypeOf: n2 } = Object;
+var a = globalThis;
+var c2 = a.trustedTypes;
+var l = c2 ? c2.emptyScript : "";
+var p = a.reactiveElementPolyfillSupport;
+var d = (t3, s4) => t3;
+var u = { toAttribute(t3, s4) {
+  switch (s4) {
+    case Boolean:
+      t3 = t3 ? l : null;
+      break;
+    case Object:
+    case Array:
+      t3 = null == t3 ? t3 : JSON.stringify(t3);
+  }
+  return t3;
+}, fromAttribute(t3, s4) {
+  let i5 = t3;
+  switch (s4) {
+    case Boolean:
+      i5 = null !== t3;
+      break;
+    case Number:
+      i5 = null === t3 ? null : Number(t3);
+      break;
+    case Object:
+    case Array:
+      try {
+        i5 = JSON.parse(t3);
+      } catch (t4) {
+        i5 = null;
+      }
+  }
+  return i5;
+} };
+var f = (t3, s4) => !i2(t3, s4);
+var b = { attribute: true, type: String, converter: u, reflect: false, useDefault: false, hasChanged: f };
+Symbol.metadata ??= Symbol("metadata"), a.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
+var y = class extends HTMLElement {
+  static addInitializer(t3) {
+    this._$Ei(), (this.l ??= []).push(t3);
+  }
+  static get observedAttributes() {
+    return this.finalize(), this._$Eh && [...this._$Eh.keys()];
+  }
+  static createProperty(t3, s4 = b) {
+    if (s4.state && (s4.attribute = false), this._$Ei(), this.prototype.hasOwnProperty(t3) && ((s4 = Object.create(s4)).wrapped = true), this.elementProperties.set(t3, s4), !s4.noAccessor) {
+      const i5 = Symbol(), h3 = this.getPropertyDescriptor(t3, i5, s4);
+      void 0 !== h3 && e2(this.prototype, t3, h3);
+    }
+  }
+  static getPropertyDescriptor(t3, s4, i5) {
+    const { get: e4, set: r4 } = h(this.prototype, t3) ?? { get() {
+      return this[s4];
+    }, set(t4) {
+      this[s4] = t4;
+    } };
+    return { get: e4, set(s5) {
+      const h3 = e4?.call(this);
+      r4?.call(this, s5), this.requestUpdate(t3, h3, i5);
+    }, configurable: true, enumerable: true };
+  }
+  static getPropertyOptions(t3) {
+    return this.elementProperties.get(t3) ?? b;
+  }
+  static _$Ei() {
+    if (this.hasOwnProperty(d("elementProperties"))) return;
+    const t3 = n2(this);
+    t3.finalize(), void 0 !== t3.l && (this.l = [...t3.l]), this.elementProperties = new Map(t3.elementProperties);
+  }
+  static finalize() {
+    if (this.hasOwnProperty(d("finalized"))) return;
+    if (this.finalized = true, this._$Ei(), this.hasOwnProperty(d("properties"))) {
+      const t4 = this.properties, s4 = [...r2(t4), ...o2(t4)];
+      for (const i5 of s4) this.createProperty(i5, t4[i5]);
+    }
+    const t3 = this[Symbol.metadata];
+    if (null !== t3) {
+      const s4 = litPropertyMetadata.get(t3);
+      if (void 0 !== s4) for (const [t4, i5] of s4) this.elementProperties.set(t4, i5);
+    }
+    this._$Eh = /* @__PURE__ */ new Map();
+    for (const [t4, s4] of this.elementProperties) {
+      const i5 = this._$Eu(t4, s4);
+      void 0 !== i5 && this._$Eh.set(i5, t4);
+    }
+    this.elementStyles = this.finalizeStyles(this.styles);
+  }
+  static finalizeStyles(s4) {
+    const i5 = [];
+    if (Array.isArray(s4)) {
+      const e4 = new Set(s4.flat(1 / 0).reverse());
+      for (const s5 of e4) i5.unshift(c(s5));
+    } else void 0 !== s4 && i5.push(c(s4));
+    return i5;
+  }
+  static _$Eu(t3, s4) {
+    const i5 = s4.attribute;
+    return false === i5 ? void 0 : "string" == typeof i5 ? i5 : "string" == typeof t3 ? t3.toLowerCase() : void 0;
+  }
+  constructor() {
+    super(), this._$Ep = void 0, this.isUpdatePending = false, this.hasUpdated = false, this._$Em = null, this._$Ev();
+  }
+  _$Ev() {
+    this._$ES = new Promise((t3) => this.enableUpdating = t3), this._$AL = /* @__PURE__ */ new Map(), this._$E_(), this.requestUpdate(), this.constructor.l?.forEach((t3) => t3(this));
+  }
+  addController(t3) {
+    (this._$EO ??= /* @__PURE__ */ new Set()).add(t3), void 0 !== this.renderRoot && this.isConnected && t3.hostConnected?.();
+  }
+  removeController(t3) {
+    this._$EO?.delete(t3);
+  }
+  _$E_() {
+    const t3 = /* @__PURE__ */ new Map(), s4 = this.constructor.elementProperties;
+    for (const i5 of s4.keys()) this.hasOwnProperty(i5) && (t3.set(i5, this[i5]), delete this[i5]);
+    t3.size > 0 && (this._$Ep = t3);
+  }
+  createRenderRoot() {
+    const t3 = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
+    return S(t3, this.constructor.elementStyles), t3;
+  }
+  connectedCallback() {
+    this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(true), this._$EO?.forEach((t3) => t3.hostConnected?.());
+  }
+  enableUpdating(t3) {
+  }
+  disconnectedCallback() {
+    this._$EO?.forEach((t3) => t3.hostDisconnected?.());
+  }
+  attributeChangedCallback(t3, s4, i5) {
+    this._$AK(t3, i5);
+  }
+  _$ET(t3, s4) {
+    const i5 = this.constructor.elementProperties.get(t3), e4 = this.constructor._$Eu(t3, i5);
+    if (void 0 !== e4 && true === i5.reflect) {
+      const h3 = (void 0 !== i5.converter?.toAttribute ? i5.converter : u).toAttribute(s4, i5.type);
+      this._$Em = t3, null == h3 ? this.removeAttribute(e4) : this.setAttribute(e4, h3), this._$Em = null;
+    }
+  }
+  _$AK(t3, s4) {
+    const i5 = this.constructor, e4 = i5._$Eh.get(t3);
+    if (void 0 !== e4 && this._$Em !== e4) {
+      const t4 = i5.getPropertyOptions(e4), h3 = "function" == typeof t4.converter ? { fromAttribute: t4.converter } : void 0 !== t4.converter?.fromAttribute ? t4.converter : u;
+      this._$Em = e4;
+      const r4 = h3.fromAttribute(s4, t4.type);
+      this[e4] = r4 ?? this._$Ej?.get(e4) ?? r4, this._$Em = null;
+    }
+  }
+  requestUpdate(t3, s4, i5, e4 = false, h3) {
+    if (void 0 !== t3) {
+      const r4 = this.constructor;
+      if (false === e4 && (h3 = this[t3]), i5 ??= r4.getPropertyOptions(t3), !((i5.hasChanged ?? f)(h3, s4) || i5.useDefault && i5.reflect && h3 === this._$Ej?.get(t3) && !this.hasAttribute(r4._$Eu(t3, i5)))) return;
+      this.C(t3, s4, i5);
+    }
+    false === this.isUpdatePending && (this._$ES = this._$EP());
+  }
+  C(t3, s4, { useDefault: i5, reflect: e4, wrapped: h3 }, r4) {
+    i5 && !(this._$Ej ??= /* @__PURE__ */ new Map()).has(t3) && (this._$Ej.set(t3, r4 ?? s4 ?? this[t3]), true !== h3 || void 0 !== r4) || (this._$AL.has(t3) || (this.hasUpdated || i5 || (s4 = void 0), this._$AL.set(t3, s4)), true === e4 && this._$Em !== t3 && (this._$Eq ??= /* @__PURE__ */ new Set()).add(t3));
+  }
+  async _$EP() {
+    this.isUpdatePending = true;
+    try {
+      await this._$ES;
+    } catch (t4) {
+      Promise.reject(t4);
+    }
+    const t3 = this.scheduleUpdate();
+    return null != t3 && await t3, !this.isUpdatePending;
+  }
+  scheduleUpdate() {
+    return this.performUpdate();
+  }
+  performUpdate() {
+    if (!this.isUpdatePending) return;
+    if (!this.hasUpdated) {
+      if (this.renderRoot ??= this.createRenderRoot(), this._$Ep) {
+        for (const [t5, s5] of this._$Ep) this[t5] = s5;
+        this._$Ep = void 0;
+      }
+      const t4 = this.constructor.elementProperties;
+      if (t4.size > 0) for (const [s5, i5] of t4) {
+        const { wrapped: t5 } = i5, e4 = this[s5];
+        true !== t5 || this._$AL.has(s5) || void 0 === e4 || this.C(s5, void 0, i5, e4);
+      }
+    }
+    let t3 = false;
+    const s4 = this._$AL;
+    try {
+      t3 = this.shouldUpdate(s4), t3 ? (this.willUpdate(s4), this._$EO?.forEach((t4) => t4.hostUpdate?.()), this.update(s4)) : this._$EM();
+    } catch (s5) {
+      throw t3 = false, this._$EM(), s5;
+    }
+    t3 && this._$AE(s4);
+  }
+  willUpdate(t3) {
+  }
+  _$AE(t3) {
+    this._$EO?.forEach((t4) => t4.hostUpdated?.()), this.hasUpdated || (this.hasUpdated = true, this.firstUpdated(t3)), this.updated(t3);
+  }
+  _$EM() {
+    this._$AL = /* @__PURE__ */ new Map(), this.isUpdatePending = false;
+  }
+  get updateComplete() {
+    return this.getUpdateComplete();
+  }
+  getUpdateComplete() {
+    return this._$ES;
+  }
+  shouldUpdate(t3) {
+    return true;
+  }
+  update(t3) {
+    this._$Eq &&= this._$Eq.forEach((t4) => this._$ET(t4, this[t4])), this._$EM();
+  }
+  updated(t3) {
+  }
+  firstUpdated(t3) {
+  }
+};
+y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[d("elementProperties")] = /* @__PURE__ */ new Map(), y[d("finalized")] = /* @__PURE__ */ new Map(), p?.({ ReactiveElement: y }), (a.reactiveElementVersions ??= []).push("2.1.2");
+
+// node_modules/lit-html/lit-html.js
+var t2 = globalThis;
+var i3 = (t3) => t3;
+var s2 = t2.trustedTypes;
+var e3 = s2 ? s2.createPolicy("lit-html", { createHTML: (t3) => t3 }) : void 0;
+var h2 = "$lit$";
+var o3 = `lit$${Math.random().toFixed(9).slice(2)}$`;
+var n3 = "?" + o3;
+var r3 = `<${n3}>`;
+var l2 = document;
+var c3 = () => l2.createComment("");
+var a2 = (t3) => null === t3 || "object" != typeof t3 && "function" != typeof t3;
+var u2 = Array.isArray;
+var d2 = (t3) => u2(t3) || "function" == typeof t3?.[Symbol.iterator];
+var f2 = "[ 	\n\f\r]";
+var v = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g;
+var _ = /-->/g;
+var m = />/g;
+var p2 = RegExp(`>|${f2}(?:([^\\s"'>=/]+)(${f2}*=${f2}*(?:[^ 	
+\f\r"'\`<>=]|("|')|))|$)`, "g");
+var g = /'/g;
+var $ = /"/g;
+var y2 = /^(?:script|style|textarea|title)$/i;
+var x = (t3) => (i5, ...s4) => ({ _$litType$: t3, strings: i5, values: s4 });
+var b2 = x(1);
+var w = x(2);
+var T = x(3);
+var E = Symbol.for("lit-noChange");
+var A = Symbol.for("lit-nothing");
+var C = /* @__PURE__ */ new WeakMap();
+var P = l2.createTreeWalker(l2, 129);
+function V(t3, i5) {
+  if (!u2(t3) || !t3.hasOwnProperty("raw")) throw Error("invalid template strings array");
+  return void 0 !== e3 ? e3.createHTML(i5) : i5;
+}
+var N = (t3, i5) => {
+  const s4 = t3.length - 1, e4 = [];
+  let n4, l3 = 2 === i5 ? "<svg>" : 3 === i5 ? "<math>" : "", c4 = v;
+  for (let i6 = 0; i6 < s4; i6++) {
+    const s5 = t3[i6];
+    let a3, u3, d3 = -1, f3 = 0;
+    for (; f3 < s5.length && (c4.lastIndex = f3, u3 = c4.exec(s5), null !== u3); ) f3 = c4.lastIndex, c4 === v ? "!--" === u3[1] ? c4 = _ : void 0 !== u3[1] ? c4 = m : void 0 !== u3[2] ? (y2.test(u3[2]) && (n4 = RegExp("</" + u3[2], "g")), c4 = p2) : void 0 !== u3[3] && (c4 = p2) : c4 === p2 ? ">" === u3[0] ? (c4 = n4 ?? v, d3 = -1) : void 0 === u3[1] ? d3 = -2 : (d3 = c4.lastIndex - u3[2].length, a3 = u3[1], c4 = void 0 === u3[3] ? p2 : '"' === u3[3] ? $ : g) : c4 === $ || c4 === g ? c4 = p2 : c4 === _ || c4 === m ? c4 = v : (c4 = p2, n4 = void 0);
+    const x2 = c4 === p2 && t3[i6 + 1].startsWith("/>") ? " " : "";
+    l3 += c4 === v ? s5 + r3 : d3 >= 0 ? (e4.push(a3), s5.slice(0, d3) + h2 + s5.slice(d3) + o3 + x2) : s5 + o3 + (-2 === d3 ? i6 : x2);
+  }
+  return [V(t3, l3 + (t3[s4] || "<?>") + (2 === i5 ? "</svg>" : 3 === i5 ? "</math>" : "")), e4];
+};
+var S2 = class _S {
+  constructor({ strings: t3, _$litType$: i5 }, e4) {
+    let r4;
+    this.parts = [];
+    let l3 = 0, a3 = 0;
+    const u3 = t3.length - 1, d3 = this.parts, [f3, v2] = N(t3, i5);
+    if (this.el = _S.createElement(f3, e4), P.currentNode = this.el.content, 2 === i5 || 3 === i5) {
+      const t4 = this.el.content.firstChild;
+      t4.replaceWith(...t4.childNodes);
+    }
+    for (; null !== (r4 = P.nextNode()) && d3.length < u3; ) {
+      if (1 === r4.nodeType) {
+        if (r4.hasAttributes()) for (const t4 of r4.getAttributeNames()) if (t4.endsWith(h2)) {
+          const i6 = v2[a3++], s4 = r4.getAttribute(t4).split(o3), e5 = /([.?@])?(.*)/.exec(i6);
+          d3.push({ type: 1, index: l3, name: e5[2], strings: s4, ctor: "." === e5[1] ? I : "?" === e5[1] ? L : "@" === e5[1] ? z : H }), r4.removeAttribute(t4);
+        } else t4.startsWith(o3) && (d3.push({ type: 6, index: l3 }), r4.removeAttribute(t4));
+        if (y2.test(r4.tagName)) {
+          const t4 = r4.textContent.split(o3), i6 = t4.length - 1;
+          if (i6 > 0) {
+            r4.textContent = s2 ? s2.emptyScript : "";
+            for (let s4 = 0; s4 < i6; s4++) r4.append(t4[s4], c3()), P.nextNode(), d3.push({ type: 2, index: ++l3 });
+            r4.append(t4[i6], c3());
+          }
+        }
+      } else if (8 === r4.nodeType) if (r4.data === n3) d3.push({ type: 2, index: l3 });
+      else {
+        let t4 = -1;
+        for (; -1 !== (t4 = r4.data.indexOf(o3, t4 + 1)); ) d3.push({ type: 7, index: l3 }), t4 += o3.length - 1;
+      }
+      l3++;
+    }
+  }
+  static createElement(t3, i5) {
+    const s4 = l2.createElement("template");
+    return s4.innerHTML = t3, s4;
+  }
+};
+function M(t3, i5, s4 = t3, e4) {
+  if (i5 === E) return i5;
+  let h3 = void 0 !== e4 ? s4._$Co?.[e4] : s4._$Cl;
+  const o5 = a2(i5) ? void 0 : i5._$litDirective$;
+  return h3?.constructor !== o5 && (h3?._$AO?.(false), void 0 === o5 ? h3 = void 0 : (h3 = new o5(t3), h3._$AT(t3, s4, e4)), void 0 !== e4 ? (s4._$Co ??= [])[e4] = h3 : s4._$Cl = h3), void 0 !== h3 && (i5 = M(t3, h3._$AS(t3, i5.values), h3, e4)), i5;
+}
+var R = class {
+  constructor(t3, i5) {
+    this._$AV = [], this._$AN = void 0, this._$AD = t3, this._$AM = i5;
+  }
+  get parentNode() {
+    return this._$AM.parentNode;
+  }
+  get _$AU() {
+    return this._$AM._$AU;
+  }
+  u(t3) {
+    const { el: { content: i5 }, parts: s4 } = this._$AD, e4 = (t3?.creationScope ?? l2).importNode(i5, true);
+    P.currentNode = e4;
+    let h3 = P.nextNode(), o5 = 0, n4 = 0, r4 = s4[0];
+    for (; void 0 !== r4; ) {
+      if (o5 === r4.index) {
+        let i6;
+        2 === r4.type ? i6 = new k(h3, h3.nextSibling, this, t3) : 1 === r4.type ? i6 = new r4.ctor(h3, r4.name, r4.strings, this, t3) : 6 === r4.type && (i6 = new Z(h3, this, t3)), this._$AV.push(i6), r4 = s4[++n4];
+      }
+      o5 !== r4?.index && (h3 = P.nextNode(), o5++);
+    }
+    return P.currentNode = l2, e4;
+  }
+  p(t3) {
+    let i5 = 0;
+    for (const s4 of this._$AV) void 0 !== s4 && (void 0 !== s4.strings ? (s4._$AI(t3, s4, i5), i5 += s4.strings.length - 2) : s4._$AI(t3[i5])), i5++;
+  }
+};
+var k = class _k {
+  get _$AU() {
+    return this._$AM?._$AU ?? this._$Cv;
+  }
+  constructor(t3, i5, s4, e4) {
+    this.type = 2, this._$AH = A, this._$AN = void 0, this._$AA = t3, this._$AB = i5, this._$AM = s4, this.options = e4, this._$Cv = e4?.isConnected ?? true;
+  }
+  get parentNode() {
+    let t3 = this._$AA.parentNode;
+    const i5 = this._$AM;
+    return void 0 !== i5 && 11 === t3?.nodeType && (t3 = i5.parentNode), t3;
+  }
+  get startNode() {
+    return this._$AA;
+  }
+  get endNode() {
+    return this._$AB;
+  }
+  _$AI(t3, i5 = this) {
+    t3 = M(this, t3, i5), a2(t3) ? t3 === A || null == t3 || "" === t3 ? (this._$AH !== A && this._$AR(), this._$AH = A) : t3 !== this._$AH && t3 !== E && this._(t3) : void 0 !== t3._$litType$ ? this.$(t3) : void 0 !== t3.nodeType ? this.T(t3) : d2(t3) ? this.k(t3) : this._(t3);
+  }
+  O(t3) {
+    return this._$AA.parentNode.insertBefore(t3, this._$AB);
+  }
+  T(t3) {
+    this._$AH !== t3 && (this._$AR(), this._$AH = this.O(t3));
+  }
+  _(t3) {
+    this._$AH !== A && a2(this._$AH) ? this._$AA.nextSibling.data = t3 : this.T(l2.createTextNode(t3)), this._$AH = t3;
+  }
+  $(t3) {
+    const { values: i5, _$litType$: s4 } = t3, e4 = "number" == typeof s4 ? this._$AC(t3) : (void 0 === s4.el && (s4.el = S2.createElement(V(s4.h, s4.h[0]), this.options)), s4);
+    if (this._$AH?._$AD === e4) this._$AH.p(i5);
+    else {
+      const t4 = new R(e4, this), s5 = t4.u(this.options);
+      t4.p(i5), this.T(s5), this._$AH = t4;
+    }
+  }
+  _$AC(t3) {
+    let i5 = C.get(t3.strings);
+    return void 0 === i5 && C.set(t3.strings, i5 = new S2(t3)), i5;
+  }
+  k(t3) {
+    u2(this._$AH) || (this._$AH = [], this._$AR());
+    const i5 = this._$AH;
+    let s4, e4 = 0;
+    for (const h3 of t3) e4 === i5.length ? i5.push(s4 = new _k(this.O(c3()), this.O(c3()), this, this.options)) : s4 = i5[e4], s4._$AI(h3), e4++;
+    e4 < i5.length && (this._$AR(s4 && s4._$AB.nextSibling, e4), i5.length = e4);
+  }
+  _$AR(t3 = this._$AA.nextSibling, s4) {
+    for (this._$AP?.(false, true, s4); t3 !== this._$AB; ) {
+      const s5 = i3(t3).nextSibling;
+      i3(t3).remove(), t3 = s5;
+    }
+  }
+  setConnected(t3) {
+    void 0 === this._$AM && (this._$Cv = t3, this._$AP?.(t3));
+  }
+};
+var H = class {
+  get tagName() {
+    return this.element.tagName;
+  }
+  get _$AU() {
+    return this._$AM._$AU;
+  }
+  constructor(t3, i5, s4, e4, h3) {
+    this.type = 1, this._$AH = A, this._$AN = void 0, this.element = t3, this.name = i5, this._$AM = e4, this.options = h3, s4.length > 2 || "" !== s4[0] || "" !== s4[1] ? (this._$AH = Array(s4.length - 1).fill(new String()), this.strings = s4) : this._$AH = A;
+  }
+  _$AI(t3, i5 = this, s4, e4) {
+    const h3 = this.strings;
+    let o5 = false;
+    if (void 0 === h3) t3 = M(this, t3, i5, 0), o5 = !a2(t3) || t3 !== this._$AH && t3 !== E, o5 && (this._$AH = t3);
+    else {
+      const e5 = t3;
+      let n4, r4;
+      for (t3 = h3[0], n4 = 0; n4 < h3.length - 1; n4++) r4 = M(this, e5[s4 + n4], i5, n4), r4 === E && (r4 = this._$AH[n4]), o5 ||= !a2(r4) || r4 !== this._$AH[n4], r4 === A ? t3 = A : t3 !== A && (t3 += (r4 ?? "") + h3[n4 + 1]), this._$AH[n4] = r4;
+    }
+    o5 && !e4 && this.j(t3);
+  }
+  j(t3) {
+    t3 === A ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t3 ?? "");
+  }
+};
+var I = class extends H {
+  constructor() {
+    super(...arguments), this.type = 3;
+  }
+  j(t3) {
+    this.element[this.name] = t3 === A ? void 0 : t3;
+  }
+};
+var L = class extends H {
+  constructor() {
+    super(...arguments), this.type = 4;
+  }
+  j(t3) {
+    this.element.toggleAttribute(this.name, !!t3 && t3 !== A);
+  }
+};
+var z = class extends H {
+  constructor(t3, i5, s4, e4, h3) {
+    super(t3, i5, s4, e4, h3), this.type = 5;
+  }
+  _$AI(t3, i5 = this) {
+    if ((t3 = M(this, t3, i5, 0) ?? A) === E) return;
+    const s4 = this._$AH, e4 = t3 === A && s4 !== A || t3.capture !== s4.capture || t3.once !== s4.once || t3.passive !== s4.passive, h3 = t3 !== A && (s4 === A || e4);
+    e4 && this.element.removeEventListener(this.name, this, s4), h3 && this.element.addEventListener(this.name, this, t3), this._$AH = t3;
+  }
+  handleEvent(t3) {
+    "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t3) : this._$AH.handleEvent(t3);
+  }
+};
+var Z = class {
+  constructor(t3, i5, s4) {
+    this.element = t3, this.type = 6, this._$AN = void 0, this._$AM = i5, this.options = s4;
+  }
+  get _$AU() {
+    return this._$AM._$AU;
+  }
+  _$AI(t3) {
+    M(this, t3);
+  }
+};
+var B = t2.litHtmlPolyfillSupport;
+B?.(S2, k), (t2.litHtmlVersions ??= []).push("3.3.3");
+var D = (t3, i5, s4) => {
+  const e4 = s4?.renderBefore ?? i5;
+  let h3 = e4._$litPart$;
+  if (void 0 === h3) {
+    const t4 = s4?.renderBefore ?? null;
+    e4._$litPart$ = h3 = new k(i5.insertBefore(c3(), t4), t4, void 0, s4 ?? {});
+  }
+  return h3._$AI(t3), h3;
 };
 
+// node_modules/lit-element/lit-element.js
+var s3 = globalThis;
+var i4 = class extends y {
+  constructor() {
+    super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
+  }
+  createRenderRoot() {
+    const t3 = super.createRenderRoot();
+    return this.renderOptions.renderBefore ??= t3.firstChild, t3;
+  }
+  update(t3) {
+    const r4 = this.render();
+    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t3), this._$Do = D(r4, this.renderRoot, this.renderOptions);
+  }
+  connectedCallback() {
+    super.connectedCallback(), this._$Do?.setConnected(true);
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback(), this._$Do?.setConnected(false);
+  }
+  render() {
+    return E;
+  }
+};
+i4._$litElement$ = true, i4["finalized"] = true, s3.litElementHydrateSupport?.({ LitElement: i4 });
+var o4 = s3.litElementPolyfillSupport;
+o4?.({ LitElement: i4 });
+(s3.litElementVersions ??= []).push("4.2.2");
+
+// src/chore-tracker-card.js
+var CARD_VERSION = "1.6.0";
+console.info(
+  `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
+  "color: white; background: #003366; font-weight: 700;",
+  "color: #003366; background: #4FC3F7; font-weight: 700;"
+);
+var CHORE_EMOJIS = {
+  vacuum: "\u{1F9F9}",
+  vacuuming: "\u{1F9F9}",
+  sweep: "\u{1F9F9}",
+  sweeping: "\u{1F9F9}",
+  mop: "\u{1FAA3}",
+  mopping: "\u{1FAA3}",
+  dust: "\u{1F9F9}",
+  dusting: "\u{1F9F9}",
+  clean: "\u{1F9FD}",
+  cleaning: "\u{1F9FD}",
+  scrub: "\u{1F9FD}",
+  scrubbing: "\u{1F9FD}",
+  wipe: "\u{1F9FD}",
+  wiping: "\u{1F9FD}",
+  wash: "\u{1FAE7}",
+  washing: "\u{1FAE7}",
+  sanitize: "\u{1F9F4}",
+  disinfect: "\u{1F9F4}",
+  dishes: "\u{1F37D}\uFE0F",
+  dish: "\u{1F37D}\uFE0F",
+  dishwasher: "\u{1F37D}\uFE0F",
+  cook: "\u{1F468}\u200D\u{1F373}",
+  cooking: "\u{1F468}\u200D\u{1F373}",
+  kitchen: "\u{1F373}",
+  trash: "\u{1F5D1}\uFE0F",
+  garbage: "\u{1F5D1}\uFE0F",
+  recycling: "\u267B\uFE0F",
+  recycle: "\u267B\uFE0F",
+  groceries: "\u{1F6D2}",
+  grocery: "\u{1F6D2}",
+  counters: "\u{1F9FD}",
+  counter: "\u{1F9FD}",
+  laundry: "\u{1F455}",
+  clothes: "\u{1F455}",
+  fold: "\u{1F455}",
+  folding: "\u{1F455}",
+  ironing: "\u{1F454}",
+  iron: "\u{1F454}",
+  bathroom: "\u{1F6BD}",
+  toilet: "\u{1F6BD}",
+  shower: "\u{1F6BF}",
+  bath: "\u{1F6C1}",
+  sink: "\u{1F6B0}",
+  lawn: "\u{1F33F}",
+  mow: "\u{1F33F}",
+  mowing: "\u{1F33F}",
+  garden: "\u{1F331}",
+  gardening: "\u{1F331}",
+  plant: "\u{1F331}",
+  water: "\u{1F4A7}",
+  watering: "\u{1F4A7}",
+  rake: "\u{1F342}",
+  raking: "\u{1F342}",
+  snow: "\u2744\uFE0F",
+  pet: "\u{1F43E}",
+  dog: "\u{1F415}",
+  cat: "\u{1F408}",
+  fish: "\u{1F41F}",
+  feed: "\u{1F963}",
+  feeding: "\u{1F963}",
+  walk: "\u{1F9AE}",
+  walking: "\u{1F9AE}",
+  litter: "\u{1F431}",
+  homework: "\u{1F4DA}",
+  study: "\u{1F4D6}",
+  studying: "\u{1F4D6}",
+  read: "\u{1F4D6}",
+  reading: "\u{1F4D6}",
+  practice: "\u{1F3B5}",
+  music: "\u{1F3B5}",
+  organize: "\u{1F4E6}",
+  organizing: "\u{1F4E6}",
+  tidy: "\u{1F5C2}\uFE0F",
+  tidying: "\u{1F5C2}\uFE0F",
+  declutter: "\u{1F4E6}",
+  sort: "\u{1F5C2}\uFE0F",
+  sorting: "\u{1F5C2}\uFE0F",
+  bedroom: "\u{1F6CF}\uFE0F",
+  bed: "\u{1F6CF}\uFE0F",
+  room: "\u{1F3E0}",
+  mail: "\u{1F4EC}",
+  car: "\u{1F697}",
+  window: "\u{1FA9F}",
+  windows: "\u{1FA9F}"
+};
+var DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function getChoreEmoji(title) {
-  const lower = title.toLowerCase();
+  const lower = String(title || "").toLowerCase();
   for (const [keyword, emoji] of Object.entries(CHORE_EMOJIS)) {
     if (lower.includes(keyword)) return emoji;
   }
-  return '✅';
+  return "\u2705";
 }
-
 function todayStr() {
-  // Local date, not UTC — recurrence must reset at the family's midnight
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
+  const d3 = /* @__PURE__ */ new Date();
+  const mm = String(d3.getMonth() + 1).padStart(2, "0");
+  const dd = String(d3.getDate()).padStart(2, "0");
+  return `${d3.getFullYear()}-${mm}-${dd}`;
 }
-
-// Coerce to a finite number, treating NaN/Infinity/garbage as 0
-function num(v) {
-  const n = typeof v === 'number' ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
+function num(v2) {
+  const n4 = typeof v2 === "number" ? v2 : parseFloat(v2);
+  return Number.isFinite(n4) ? n4 : 0;
 }
-
-// Round to cents — avoids floating-point drift from repeated +/- on dollars
-function round2(v) {
-  return Math.round(num(v) * 100) / 100;
+function round2(v2) {
+  return Math.round(num(v2) * 100) / 100;
 }
-
-// Escape user-supplied text before interpolating into HTML — covers both
-// element content and quoted attribute values.
-function esc(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function isWeekday() {
-  const d = new Date().getDay(); // 0=Sun, 6=Sat
-  return d >= 1 && d <= 5;
+  const d3 = (/* @__PURE__ */ new Date()).getDay();
+  return d3 >= 1 && d3 <= 5;
 }
-
-const DEFAULT_CONFIG = {
-  title: 'Chore Tracker',
-  admin_password: '1234',
+function recurrenceLabel(c4) {
+  if (c4.recurrence === "daily") return "\u{1F501} Daily";
+  if (c4.recurrence === "weekdays") return "\u{1F501} Weekdays";
+  if (c4.recurrence === "weekly") return `\u{1F501} ${(c4.recurrenceDays || []).map((d3) => DAY_ABBR[d3]).join(", ") || "Weekly"}`;
+  return "";
+}
+var DEFAULT_CONFIG = {
+  title: "Chore Tracker",
+  admin_password: "1234"
 };
-
-class ChoreTrackerCard extends HTMLElement {
+var ChoreTrackerCard = class extends i4 {
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
     this._state = {
-      activeTab: null,     // member id or 'pool'
+      activeTab: null,
+      // member id or 'pool'
       adminUnlocked: false,
-      adminTab: 'chores',  // chores | members | pool
+      adminTab: "chores",
+      // chores | members | pool
       editingChore: null,
       editingMember: null,
-      claimingChore: null, // pool chore id being claimed — shows member picker
-      view: 'main',        // main | admin
+      claimingChore: null,
+      // pool chore id being claimed — shows member picker
+      view: "main"
+      // main | admin
     };
     this._initialRenderDone = false;
+    this._syncError = null;
+    this._confirmKey = null;
+    this._loginError = "";
+    this._editRecurrence = null;
   }
-
   set hass(hass) {
     this._hass = hass;
     this._subscribeToUpdates();
     if (!this._initialRenderDone && this._config) {
       this._initialRenderDone = true;
       this._loadData();
-      this._render();
+      this.requestUpdate();
     }
   }
-
+  get hass() {
+    return this._hass;
+  }
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
-    // Data is embedded directly in the card config (written there by _saveData).
-    // Load it synchronously so the card is ready on first render.
     this._loadData();
-    this._render();
+    this.requestUpdate();
   }
-
   _storageKey() {
-    return `chore_tracker_${(this._config.title || 'default').replace(/\s+/g, '_')}`;
+    return `chore_tracker_${(this._config.title || "default").replace(/\s+/g, "_")}`;
   }
-
   // Synchronous: reads from config.data (written by _saveData via lovelace/config/save).
   // Falls back to localStorage for pre-v1.2 migration.
   _loadData() {
-    if (this._config.data && typeof this._config.data === 'object') {
-      // HA deep-freezes the lovelace config it passes to cards, so clone it
-      // to get mutable objects we can update.
-      const d = JSON.parse(JSON.stringify(this._config.data));
+    if (this._config.data && typeof this._config.data === "object") {
+      const d3 = JSON.parse(JSON.stringify(this._config.data));
       this._data = {
-        members: d.members || [],
-        chores:  d.chores  || [],
-        pool:    d.pool    || [],
+        members: d3.members || [],
+        chores: d3.chores || [],
+        pool: d3.pool || []
       };
       console.info(`ChoreTracker v${CARD_VERSION}: loaded data from dashboard config (synced)`);
       this._checkRecurrenceResets();
       return;
     }
-    // Migration: check localStorage for data written by older versions
     try {
       const raw = localStorage.getItem(this._storageKey());
       if (raw) {
         this._data = JSON.parse(raw);
-        console.info(`ChoreTracker v${CARD_VERSION}: migrating localStorage data to dashboard config…`);
+        console.info(`ChoreTracker v${CARD_VERSION}: migrating localStorage data to dashboard config\u2026`);
         this._checkRecurrenceResets();
-        this._saveData(); // push to lovelace config so all devices see it
+        this._saveData();
         return;
       }
-    } catch (_) {}
+    } catch (_2) {
+    }
     this._data = { members: [], chores: [], pool: [] };
   }
-
   // Public save entry point. Writes localStorage immediately, then debounces
   // the (expensive, whole-dashboard) lovelace write so rapid toggles collapse
   // into a single save — this also shrinks the window for two devices
@@ -150,9 +753,11 @@ class ChoreTrackerCard extends HTMLElement {
     localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
     if (!this._hass) return;
     clearTimeout(this._saveTimer);
-    this._saveTimer = setTimeout(() => this._flushSave(), 500);
+    this._saveTimer = setTimeout(() => {
+      this._saveTimer = null;
+      this._flushSave();
+    }, 500);
   }
-
   // Serialize lovelace writes: never two in flight, and a save requested
   // while one is running re-runs after it finishes (with the latest data).
   async _flushSave() {
@@ -171,74 +776,71 @@ class ChoreTrackerCard extends HTMLElement {
       }
     }
   }
-
   _callWS(msg) {
-    if (typeof this._hass.callWS === 'function') return this._hass.callWS(msg);
+    if (typeof this._hass.callWS === "function") return this._hass.callWS(msg);
     if (this._hass.connection?.sendMessagePromise) return this._hass.connection.sendMessagePromise(msg);
-    throw new Error('No WS API');
+    throw new Error("No WS API");
   }
-
   // Fetch the config of the dashboard this card lives on. Explicit config
   // wins, otherwise derive it from the page URL (first path segment).
   // The default dashboard ("lovelace") must be requested as url_path null.
   async _fetchDashboardConfig() {
     let urlPath = this._config.lovelace_url_path;
     if (!urlPath) {
-      const seg = window.location.pathname.split('/')[1] || '';
+      const seg = window.location.pathname.split("/")[1] || "";
       urlPath = seg;
     }
-    if (!urlPath || urlPath === 'lovelace') urlPath = null;
-
+    if (!urlPath || urlPath === "lovelace") urlPath = null;
     try {
-      const cfg = await this._callWS({ type: 'lovelace/config', url_path: urlPath });
+      const cfg = await this._callWS({ type: "lovelace/config", url_path: urlPath });
       return { cfg, urlPath };
     } catch (err) {
-      // Fallback: search every storage-mode dashboard for this card
-      const dashboards = await this._callWS({ type: 'lovelace/dashboards/list' });
-      for (const dash of [{ url_path: null }, ...(dashboards || [])]) {
-        if (dash.mode && dash.mode !== 'storage') continue;
-        const p = dash.url_path === 'lovelace' ? null : dash.url_path;
-        if (p === urlPath) continue; // already tried
+      const dashboards = await this._callWS({ type: "lovelace/dashboards/list" });
+      for (const dash of [{ url_path: null }, ...dashboards || []]) {
+        if (dash.mode && dash.mode !== "storage") continue;
+        const p3 = dash.url_path === "lovelace" ? null : dash.url_path;
+        if (p3 === urlPath) continue;
         try {
-          const cfg = await this._callWS({ type: 'lovelace/config', url_path: p });
-          if (JSON.stringify(cfg).includes('custom:chore-tracker-card')) {
-            return { cfg, urlPath: p };
+          const cfg = await this._callWS({ type: "lovelace/config", url_path: p3 });
+          if (JSON.stringify(cfg).includes("custom:chore-tracker-card")) {
+            return { cfg, urlPath: p3 };
           }
-        } catch (_) { /* dashboard has no stored config — skip */ }
+        } catch (_2) {
+        }
       }
       throw err;
     }
   }
-
   // Find this card's node inside a dashboard config tree, using the same
   // identity rules as saving: storage_key first, then legacy title match.
   _findCardNode(cfg) {
     const myKey = this._config.storage_key || null;
     const matches = (node) => {
-      if (node.type !== 'custom:chore-tracker-card') return false;
+      if (node.type !== "custom:chore-tracker-card") return false;
       if (myKey) return node.storage_key === myKey;
-      return !node.storage_key &&
-        (node.title || '') === (this._config.title || 'Chore Tracker');
+      return !node.storage_key && (node.title || "") === (this._config.title || "Chore Tracker");
     };
     let result = null;
     const walk = (nodes) => {
       if (!Array.isArray(nodes) || result) return;
       for (const node of nodes) {
-        if (!node || typeof node !== 'object') continue;
-        if (matches(node)) { result = node; return; }
+        if (!node || typeof node !== "object") continue;
+        if (matches(node)) {
+          result = node;
+          return;
+        }
         walk(node.cards);
         if (node.card) walk([node.card]);
       }
     };
-    for (const view of (cfg.views || [])) {
+    for (const view of cfg.views || []) {
       walk(view.cards);
-      for (const section of (view.sections || [])) {
+      for (const section of view.sections || []) {
         walk(section.cards);
       }
     }
     return result;
   }
-
   // Writes data into the card's own lovelace dashboard config entry so it is
   // shared across ALL HA users and devices, not just the current browser.
   // The config is re-fetched immediately before every save so we patch the
@@ -247,55 +849,37 @@ class ChoreTrackerCard extends HTMLElement {
     if (!this._hass) return;
     try {
       const fetched = await this._fetchDashboardConfig();
-      const lovelaceConfig = fetched.cfg;
-      const urlPath = fetched.urlPath;
-
-      // Deep-clone so we don't mutate the live object
-      const cfg = JSON.parse(JSON.stringify(lovelaceConfig));
+      const cfg = JSON.parse(JSON.stringify(fetched.cfg));
       const node = this._findCardNode(cfg);
-
       if (node) {
         node.data = JSON.parse(JSON.stringify(this._data));
-        // Stamp a permanent identity on first save so future matching
-        // doesn't depend on the title.
         if (!node.storage_key) {
           node.storage_key = this._config.storage_key || this._uid();
           this._config = { ...this._config, storage_key: node.storage_key };
         }
         await this._callWS({
-          type: 'lovelace/config/save',
-          url_path: urlPath,
-          config: cfg,
+          type: "lovelace/config/save",
+          url_path: fetched.urlPath,
+          config: cfg
         });
         this._lastLocalSave = Date.now();
         this._setSyncError(null);
         console.info(`ChoreTracker v${CARD_VERSION}: data saved to dashboard config (synced to all devices)`);
       } else {
-        this._setSyncError('Card not found in dashboard config — changes saved on this device only.');
-        console.warn('ChoreTracker: could not find card in lovelace config — data saved to localStorage only');
+        this._setSyncError("Card not found in dashboard config \u2014 changes saved on this device only.");
+        console.warn("ChoreTracker: could not find card in lovelace config \u2014 data saved to localStorage only");
       }
-    } catch (e) {
-      this._setSyncError('Sync failed — changes saved on this device only.');
-      console.warn('ChoreTracker: lovelace save failed —', e.message || e);
+    } catch (e4) {
+      this._setSyncError("Sync failed \u2014 changes saved on this device only.");
+      console.warn("ChoreTracker: lovelace save failed \u2014", e4.message || e4);
     }
   }
-
-  // ─── SYNC STATUS BANNER ─────────────────────────────────────────────────
-  // Surface sync failures in the card instead of only the console. Updates
-  // the banner element in place — no full re-render, so it can't clobber a
-  // form the user is typing in.
+  // Surface sync failures in the card instead of only the console. With lit's
+  // diffed rendering this is safe to do mid-edit — unrelated DOM is untouched.
   _setSyncError(message) {
     this._syncError = message || null;
-    const el = this.shadowRoot.getElementById('sync-banner');
-    if (!el) return;
-    if (this._syncError) {
-      el.textContent = `⚠️ ${this._syncError}`;
-      el.style.display = 'block';
-    } else {
-      el.style.display = 'none';
-    }
+    this.requestUpdate();
   }
-
   // ─── LIVE REFRESH ───────────────────────────────────────────────────────
   // HA fires lovelace_updated whenever any client saves the dashboard.
   // Pull the fresh data so this device updates without a page reload —
@@ -306,75 +890,65 @@ class ChoreTrackerCard extends HTMLElement {
     this._hass.connection.subscribeEvents(() => {
       clearTimeout(this._refreshTimer);
       this._refreshTimer = setTimeout(() => this._refreshFromServer(), 400);
-    }, 'lovelace_updated');
+    }, "lovelace_updated");
   }
-
   _isUserBusy() {
-    if (this._state.view === 'admin') return true;
+    if (this._state.view === "admin") return true;
     if (this._state.claimingChore) return true;
-    const active = this.shadowRoot.activeElement;
-    return !!(active && (active.tagName === 'INPUT' || active.tagName === 'SELECT'));
+    const active = this.shadowRoot?.activeElement;
+    return !!(active && (active.tagName === "INPUT" || active.tagName === "SELECT"));
   }
-
   async _refreshFromServer() {
-    // Ignore the echo of our own save
-    if (this._saving || this._saveTimer || (Date.now() - (this._lastLocalSave || 0)) < 2000) return;
+    if (this._saving || this._saveTimer || Date.now() - (this._lastLocalSave || 0) < 2e3) return;
     if (this._isUserBusy()) return;
     try {
       const { cfg } = await this._fetchDashboardConfig();
       const node = this._findCardNode(cfg);
       if (!node || !node.data) return;
       const fresh = JSON.stringify(node.data);
-      if (fresh === JSON.stringify(this._data)) return; // nothing new
+      if (fresh === JSON.stringify(this._data)) return;
       this._data = JSON.parse(fresh);
       localStorage.setItem(this._storageKey(), fresh);
       this._checkRecurrenceResets();
-      this._render();
+      this.requestUpdate();
       console.info(`ChoreTracker v${CARD_VERSION}: refreshed data from another device`);
-    } catch (_) { /* transient — next lovelace_updated will retry */ }
+    } catch (_2) {
+    }
   }
-
   _uid() {
     return Math.random().toString(36).slice(2, 10);
   }
-
   // Don't lose a debounced save if the card is removed (dashboard switch,
   // edit mode, etc.) before the timer fires.
   disconnectedCallback() {
+    super.disconnectedCallback();
     if (this._saveTimer) {
       clearTimeout(this._saveTimer);
       this._saveTimer = null;
       this._flushSave();
     }
   }
-
   // Auto-reset chores based on recurrence schedule
   _checkRecurrenceResets() {
     const today = todayStr();
     let changed = false;
-    (this._data.chores || []).forEach(chore => {
-      if (!chore.recurrence || chore.recurrence === 'none') return;
-      (chore.assignedTo || []).forEach(memberId => {
+    (this._data.chores || []).forEach((chore) => {
+      if (!chore.recurrence || chore.recurrence === "none") return;
+      (chore.assignedTo || []).forEach((memberId) => {
         if (!chore.memberStates) chore.memberStates = {};
         if (!chore.memberStates[memberId]) chore.memberStates[memberId] = {};
         const state = chore.memberStates[memberId];
-        const lastReset = state.lastResetDate || '';
-        if (lastReset === today) return; // already handled today
-
+        const lastReset = state.lastResetDate || "";
+        if (lastReset === today) return;
         let shouldReset = false;
-        if (chore.recurrence === 'daily') {
+        if (chore.recurrence === "daily") {
           shouldReset = true;
-        } else if (chore.recurrence === 'weekdays' && isWeekday()) {
+        } else if (chore.recurrence === "weekdays" && isWeekday()) {
           shouldReset = true;
-        } else if (chore.recurrence === 'weekly' &&
-                   (chore.recurrenceDays || []).includes(new Date().getDay())) {
+        } else if (chore.recurrence === "weekly" && (chore.recurrenceDays || []).includes((/* @__PURE__ */ new Date()).getDay())) {
           shouldReset = true;
         }
-
         if (shouldReset) {
-          // Recurrence reset unchecks the chore but the member KEEPS the
-          // points/dollars they earned — earnings are only removed when a
-          // chore is manually unchecked or an admin resets it.
           chore.memberStates[memberId] = { completed: false, lastResetDate: today };
           changed = true;
         }
@@ -382,139 +956,96 @@ class ChoreTrackerCard extends HTMLElement {
     });
     if (changed) this._saveData();
   }
-
   _getMemberChores(memberId) {
-    return (this._data.chores || [])
-      .filter(c => (c.assignedTo || []).includes(memberId))
-      .map(c => {
-        const ms = ((c.memberStates || {})[memberId] || {});
-        return { ...c, completed: ms.completed || false };
-      });
+    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId)).map((c4) => {
+      const ms = (c4.memberStates || {})[memberId] || {};
+      return { ...c4, completed: ms.completed || false };
+    });
   }
-
   _allChoresDone(memberId) {
     const chores = this._getMemberChores(memberId);
-    return chores.length > 0 && chores.every(c => c.completed);
+    return chores.length > 0 && chores.every((c4) => c4.completed);
   }
-
   _getPoolChores() {
-    return (this._data.pool || []).filter(c => !c.claimedBy);
+    return (this._data.pool || []).filter((c4) => !c4.claimedBy);
   }
-
   _eligibleClaimers() {
-    return (this._data.members || []).filter(m => this._allChoresDone(m.id));
+    return (this._data.members || []).filter((m2) => this._allChoresDone(m2.id));
   }
-
   // ─── RENDER ──────────────────────────────────────────────────────────────
-
-  _render() {
-    if (!this._config || !this._data) return;
-
-    // Default active tab to first member or pool
+  render() {
+    if (!this._config || !this._data) return A;
     if (!this._state.activeTab) {
       const first = (this._data.members || [])[0];
-      this._state.activeTab = first ? first.id : 'pool';
+      this._state.activeTab = first ? first.id : "pool";
     }
-
-    this.shadowRoot.innerHTML = `
-      <style>${this._styles()}</style>
+    return b2`
       <ha-card>
-        <div class="sync-banner" id="sync-banner" style="display:${this._syncError ? 'block' : 'none'}">${this._syncError ? `⚠️ ${esc(this._syncError)}` : ''}</div>
-        ${this._state.view === 'admin' ? this._renderAdmin() : this._renderMain()}
+        ${this._syncError ? b2`<div class="sync-banner">⚠️ ${this._syncError}</div>` : A}
+        ${this._state.view === "admin" ? this._renderAdmin() : this._renderMain()}
       </ha-card>
     `;
-    this._attachEvents();
   }
-
+  _setState(patch) {
+    Object.assign(this._state, patch);
+    this.requestUpdate();
+  }
   _renderMain() {
     const members = this._data.members || [];
     const poolCount = this._getPoolChores().length;
     const activeTab = this._state.activeTab;
-
-    const tabs = members.map(m => {
-      const chores = this._getMemberChores(m.id);
-      const done = chores.filter(c => c.completed).length;
-      const total = chores.length;
-      const allDone = total > 0 && done === total;
-      return `
-        <button class="member-tab ${activeTab === m.id ? 'active' : ''}" data-action="set-tab" data-tab="${m.id}">
-          <span class="tab-avatar ${allDone ? 'done' : ''}">${esc(m.avatar || m.name[0].toUpperCase())}</span>
-          <span class="tab-name">${esc(m.name)}</span>
-          ${total > 0 ? `<span class="tab-badge ${allDone ? 'badge-done' : ''}">${done}/${total}</span>` : ''}
-        </button>
-      `;
-    }).join('');
-
-    const poolTab = `
-      <button class="member-tab ${activeTab === 'pool' ? 'active' : ''}" data-action="set-tab" data-tab="pool">
-        <span class="tab-avatar pool-icon">📋</span>
-        <span class="tab-name">Available Chores</span>
-        ${poolCount > 0 ? `<span class="tab-badge">${poolCount}</span>` : ''}
-      </button>
-    `;
-
-    return `
+    return b2`
       <div class="header">
-        <span class="header-title">${esc(this._config.title || 'Chore Tracker')}</span>
-        <button class="icon-btn" data-action="view-admin" title="Admin">⚙️</button>
+        <span class="header-title">${this._config.title || "Chore Tracker"}</span>
+        <button class="icon-btn" title="Admin"
+          @click=${() => this._setState({ view: "admin", editingChore: null, editingMember: null })}>⚙️</button>
       </div>
       <div class="tab-bar">
-        ${tabs}
-        ${poolTab}
+        ${members.map((m2) => {
+      const chores = this._getMemberChores(m2.id);
+      const done = chores.filter((c4) => c4.completed).length;
+      const total = chores.length;
+      const allDone = total > 0 && done === total;
+      return b2`
+            <button class="member-tab ${activeTab === m2.id ? "active" : ""}"
+              @click=${() => this._setState({ activeTab: m2.id, claimingChore: null })}>
+              <span class="tab-avatar ${allDone ? "done" : ""}">${m2.avatar || m2.name[0].toUpperCase()}</span>
+              <span class="tab-name">${m2.name}</span>
+              ${total > 0 ? b2`<span class="tab-badge ${allDone ? "badge-done" : ""}">${done}/${total}</span>` : A}
+            </button>
+          `;
+    })}
+        <button class="member-tab ${activeTab === "pool" ? "active" : ""}"
+          @click=${() => this._setState({ activeTab: "pool", claimingChore: null })}>
+          <span class="tab-avatar pool-icon">📋</span>
+          <span class="tab-name">Available Chores</span>
+          ${poolCount > 0 ? b2`<span class="tab-badge">${poolCount}</span>` : A}
+        </button>
       </div>
       <div class="tab-content">
-        ${activeTab === 'pool' ? this._renderPool() : this._renderMemberPanel(activeTab)}
+        ${activeTab === "pool" ? this._renderPool() : this._renderMemberPanel(activeTab)}
       </div>
-      ${this._state.claimingChore ? this._renderClaimModal() : ''}
+      ${this._state.claimingChore ? this._renderClaimModal() : A}
     `;
   }
-
   _renderMemberPanel(memberId) {
-    const m = (this._data.members || []).find(x => x.id === memberId);
-    if (!m) return '<div class="empty">Member not found.</div>';
-
-    const chores = this._getMemberChores(m.id);
-    const done = chores.filter(c => c.completed).length;
+    const m2 = (this._data.members || []).find((x2) => x2.id === memberId);
+    if (!m2) return b2`<div class="empty">Member not found.</div>`;
+    const chores = this._getMemberChores(m2.id);
+    const done = chores.filter((c4) => c4.completed).length;
     const total = chores.length;
-    const pct = total ? Math.round((done / total) * 100) : 0;
+    const pct = total ? Math.round(done / total * 100) : 0;
     const allDone = total > 0 && done === total;
     const poolAvailable = this._getPoolChores().length > 0;
-
-    const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const recurrenceLabel = (c) => {
-      if (c.recurrence === 'daily') return '🔁 Daily';
-      if (c.recurrence === 'weekdays') return '🔁 Weekdays';
-      if (c.recurrence === 'weekly') return `🔁 ${(c.recurrenceDays || []).map(d => DAY_ABBR[d]).join(', ') || 'Weekly'}`;
-      return '';
-    };
-
-    const choreItems = chores.map(c => `
-      <div class="chore-item ${c.completed ? 'completed' : ''}">
-        <button class="chore-check ${c.completed ? 'checked' : ''}"
-          data-action="toggle-chore" data-choreid="${c.id}" data-memberid="${m.id}">
-          ${c.completed ? '✔' : ''}
-        </button>
-        <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
-        <div class="chore-body">
-          <span class="chore-title">${esc(c.title)}</span>
-          ${c.recurrence && c.recurrence !== 'none' ? `<span class="chore-recur">${recurrenceLabel(c)}</span>` : ''}
-        </div>
-        <div class="chore-rewards">
-          ${c.points ? `<span class="reward-badge points">⭐${c.points}</span>` : ''}
-          ${c.dollars ? `<span class="reward-badge dollars">💵$${num(c.dollars).toFixed(2)}</span>` : ''}
-        </div>
-      </div>
-    `).join('');
-
-    return `
+    return b2`
       <div class="member-summary">
         <div class="summary-left">
-          <div class="summary-avatar">${esc(m.avatar || m.name[0].toUpperCase())}</div>
+          <div class="summary-avatar">${m2.avatar || m2.name[0].toUpperCase()}</div>
           <div>
-            <div class="summary-name">${esc(m.name)}</div>
+            <div class="summary-name">${m2.name}</div>
             <div class="summary-stats">
-              <span class="stat-chip">⭐ ${m.points || 0} pts</span>
-              <span class="stat-chip">💵 $${num(m.dollars).toFixed(2)}</span>
+              <span class="stat-chip">⭐ ${m2.points || 0} pts</span>
+              <span class="stat-chip">💵 $${num(m2.dollars).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -524,416 +1055,149 @@ class ChoreTrackerCard extends HTMLElement {
         </div>
       </div>
       <div class="chores-list">
-        ${choreItems || '<div class="empty">No chores assigned yet!</div>'}
+        ${chores.length ? chores.map((c4) => b2`
+          <div class="chore-item ${c4.completed ? "completed" : ""}">
+            <button class="chore-check ${c4.completed ? "checked" : ""}"
+              @click=${() => this._toggleChore(c4.id, m2.id)}>
+              ${c4.completed ? "\u2714" : ""}
+            </button>
+            <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
+            <div class="chore-body">
+              <span class="chore-title">${c4.title}</span>
+              ${c4.recurrence && c4.recurrence !== "none" ? b2`<span class="chore-recur">${recurrenceLabel(c4)}</span>` : A}
+            </div>
+            <div class="chore-rewards">
+              ${c4.points ? b2`<span class="reward-badge points">⭐${c4.points}</span>` : A}
+              ${c4.dollars ? b2`<span class="reward-badge dollars">💵$${num(c4.dollars).toFixed(2)}</span>` : A}
+            </div>
+          </div>
+        `) : b2`<div class="empty">No chores assigned yet!</div>`}
       </div>
-      ${allDone && poolAvailable ? `
-        <div class="claim-banner" data-action="set-tab" data-tab="pool">
+      ${allDone && poolAvailable ? b2`
+        <div class="claim-banner" @click=${() => this._setState({ activeTab: "pool" })}>
           🎉 All done! Claim bonus chores from Available Chores →
         </div>
-      ` : ''}
+      ` : A}
     `;
   }
-
   _renderPool() {
     const pool = this._getPoolChores();
     const eligibles = this._eligibleClaimers();
-
-    const items = pool.map(c => `
-      <div class="chore-item">
-        <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
-        <div class="chore-body">
-          <span class="chore-title">${esc(c.title)}</span>
-        </div>
-        <div class="chore-rewards">
-          ${c.points ? `<span class="reward-badge points">⭐${c.points}</span>` : ''}
-          ${c.dollars ? `<span class="reward-badge dollars">💵$${num(c.dollars).toFixed(2)}</span>` : ''}
-        </div>
-        <button class="claim-btn ${eligibles.length === 0 ? 'disabled' : ''}"
-          data-action="open-claim" data-choreid="${c.id}"
-          ${eligibles.length === 0 ? 'disabled title="No members have completed their chores yet"' : ''}>
-          Claim
-        </button>
-      </div>
-    `).join('');
-
-    const claimed = (this._data.pool || []).filter(c => c.claimedBy);
-    const claimedItems = claimed.map(c => {
-      const claimer = (this._data.members || []).find(m => m.id === c.claimedBy);
-      return `
-        <div class="chore-item claimed">
-          <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
-          <div class="chore-body">
-            <span class="chore-title">${esc(c.title)}</span>
-            <span class="chore-recur">Claimed by ${esc(claimer ? claimer.name : 'unknown')}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    return `
+    const claimed = (this._data.pool || []).filter((c4) => c4.claimedBy);
+    return b2`
       <div class="pool-header">
         <div class="pool-info">
-          ${eligibles.length > 0
-            ? `<span class="pool-eligible">✅ ${esc(eligibles.map(m => m.name).join(', '))} can claim!</span>`
-            : `<span class="pool-none">Complete all assigned chores to claim pool chores.</span>`}
+          ${eligibles.length > 0 ? b2`<span class="pool-eligible">✅ ${eligibles.map((m2) => m2.name).join(", ")} can claim!</span>` : b2`<span class="pool-none">Complete all assigned chores to claim pool chores.</span>`}
         </div>
       </div>
       <div class="chores-list">
-        ${items || '<div class="empty">No chores available in the pool.</div>'}
+        ${pool.length ? pool.map((c4) => b2`
+          <div class="chore-item">
+            <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
+            <div class="chore-body">
+              <span class="chore-title">${c4.title}</span>
+            </div>
+            <div class="chore-rewards">
+              ${c4.points ? b2`<span class="reward-badge points">⭐${c4.points}</span>` : A}
+              ${c4.dollars ? b2`<span class="reward-badge dollars">💵$${num(c4.dollars).toFixed(2)}</span>` : A}
+            </div>
+            <button class="claim-btn ${eligibles.length === 0 ? "disabled" : ""}"
+              ?disabled=${eligibles.length === 0}
+              title=${eligibles.length === 0 ? "No members have completed their chores yet" : ""}
+              @click=${() => this._setState({ claimingChore: c4.id })}>
+              Claim
+            </button>
+          </div>
+        `) : b2`<div class="empty">No chores available in the pool.</div>`}
       </div>
-      ${claimed.length > 0 ? `
+      ${claimed.length > 0 ? b2`
         <div class="section-label">Already Claimed</div>
         <div class="chores-list claimed-list">
-          ${claimedItems}
+          ${claimed.map((c4) => {
+      const claimer = (this._data.members || []).find((m2) => m2.id === c4.claimedBy);
+      return b2`
+              <div class="chore-item claimed">
+                <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
+                <div class="chore-body">
+                  <span class="chore-title">${c4.title}</span>
+                  <span class="chore-recur">Claimed by ${claimer ? claimer.name : "unknown"}</span>
+                </div>
+              </div>
+            `;
+    })}
         </div>
-      ` : ''}
+      ` : A}
     `;
   }
-
   _renderClaimModal() {
     const choreId = this._state.claimingChore;
-    const chore = (this._data.pool || []).find(c => c.id === choreId);
-    if (!chore) return '';
+    const chore = (this._data.pool || []).find((c4) => c4.id === choreId);
+    if (!chore) return A;
     const eligibles = this._eligibleClaimers();
-
-    return `
-      <div class="modal-overlay" data-action="close-claim">
-        <div class="modal" onclick="event.stopPropagation()">
-          <div class="modal-title">Assign "${esc(chore.emoji || getChoreEmoji(chore.title))} ${esc(chore.title)}"</div>
+    return b2`
+      <div class="modal-overlay" @click=${() => this._setState({ claimingChore: null })}>
+        <div class="modal" @click=${(e4) => e4.stopPropagation()}>
+          <div class="modal-title">Assign "${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}"</div>
           <div class="modal-subtitle">Who is claiming this chore?</div>
           <div class="modal-members">
-            ${eligibles.map(m => `
-              <button class="modal-member-btn" data-action="confirm-claim" data-choreid="${choreId}" data-memberid="${m.id}">
-                <span class="modal-avatar">${esc(m.avatar || m.name[0].toUpperCase())}</span>
-                <span>${esc(m.name)}</span>
+            ${eligibles.map((m2) => b2`
+              <button class="modal-member-btn" @click=${() => this._claimChore(choreId, m2.id)}>
+                <span class="modal-avatar">${m2.avatar || m2.name[0].toUpperCase()}</span>
+                <span>${m2.name}</span>
               </button>
-            `).join('')}
+            `)}
           </div>
-          <button class="secondary-btn" data-action="close-claim">Cancel</button>
+          <button class="secondary-btn" @click=${() => this._setState({ claimingChore: null })}>Cancel</button>
         </div>
       </div>
     `;
   }
-
   // ─── ADMIN ────────────────────────────────────────────────────────────────
-
   _renderAdmin() {
     if (!this._state.adminUnlocked) return this._renderAdminLogin();
     const tab = this._state.adminTab;
-    return `
+    return b2`
       <div class="header">
-        <button class="back-btn" data-action="go-main">← Back</button>
+        <button class="back-btn" @click=${() => this._setState({ view: "main", adminUnlocked: false })}>← Back</button>
         <span class="header-title">Admin Console</span>
-        <button class="icon-btn" data-action="admin-logout" title="Lock">🔒</button>
+        <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: "main", adminUnlocked: false })}>🔒</button>
       </div>
       <div class="tab-bar admin-tabs">
-        <button class="member-tab ${tab === 'chores' ? 'active' : ''}" data-action="admin-tab" data-tab="chores">Chores</button>
-        <button class="member-tab ${tab === 'members' ? 'active' : ''}" data-action="admin-tab" data-tab="members">Members</button>
-        <button class="member-tab ${tab === 'pool' ? 'active' : ''}" data-action="admin-tab" data-tab="pool">Available Chores</button>
+        ${["chores", "members", "pool"].map((t3) => b2`
+          <button class="member-tab ${tab === t3 ? "active" : ""}"
+            @click=${() => this._setState({ adminTab: t3, editingChore: null, editingMember: null })}>
+            ${t3 === "chores" ? "Chores" : t3 === "members" ? "Members" : "Available Chores"}
+          </button>
+        `)}
       </div>
       <div class="tab-content">
-        ${tab === 'chores' ? this._renderAdminChores() : ''}
-        ${tab === 'members' ? this._renderAdminMembers() : ''}
-        ${tab === 'pool' ? this._renderAdminPool() : ''}
+        ${tab === "chores" ? this._renderAdminChores() : A}
+        ${tab === "members" ? this._renderAdminMembers() : A}
+        ${tab === "pool" ? this._renderAdminPool() : A}
       </div>
     `;
   }
-
   _renderAdminLogin() {
-    return `
+    return b2`
       <div class="header">
-        <button class="back-btn" data-action="go-main">← Back</button>
+        <button class="back-btn" @click=${() => this._setState({ view: "main" })}>← Back</button>
         <span class="header-title">Admin Console</span>
       </div>
       <div class="admin-login">
         <div class="login-icon">🔐</div>
         <div class="login-title">Enter Admin Password</div>
-        <input class="admin-input" id="admin-password" type="password" placeholder="Password" />
-        <div class="login-error" id="login-error"></div>
-        <button class="primary-btn" data-action="admin-login">Unlock</button>
+        <input class="admin-input" id="admin-password" type="password" placeholder="Password"
+          @keydown=${(e4) => {
+      if (e4.key === "Enter") this._adminLogin();
+    }} />
+        <div class="login-error">${this._loginError}</div>
+        <button class="primary-btn" @click=${() => this._adminLogin()}>Unlock</button>
       </div>
     `;
   }
-
-  _renderAdminChores() {
-    const members = this._data.members || [];
-    const chores = this._data.chores || [];
-    const editing = this._state.editingChore;
-
-    if (editing !== null) {
-      const isNew = editing === 'new';
-      const chore = isNew ? { title: '', emoji: '', points: 0, dollars: 0, assignedTo: [], recurrence: 'none' }
-        : chores.find(c => c.id === editing) || {};
-      return `
-        <div class="edit-form">
-          <div class="form-title">${isNew ? 'Add Chore' : 'Edit Chore'}</div>
-          <label>Title</label>
-          <input class="form-input" id="ec-title" value="${this._esc(chore.title || '')}" placeholder="Chore name" />
-          <label>Emoji (optional override)</label>
-          <input class="form-input" id="ec-emoji" value="${this._esc(chore.emoji || '')}" placeholder="e.g. 🧹" />
-          <label>Points</label>
-          <input class="form-input" id="ec-points" type="number" min="0" value="${chore.points || 0}" />
-          <label>Dollar Value ($)</label>
-          <input class="form-input" id="ec-dollars" type="number" min="0" step="0.01" value="${chore.dollars || 0}" />
-          <label>Recurrence</label>
-          <select class="form-input" id="ec-recurrence">
-            <option value="none" ${(!chore.recurrence || chore.recurrence === 'none') ? 'selected' : ''}>One-time / No reset</option>
-            <option value="daily" ${chore.recurrence === 'daily' ? 'selected' : ''}>🔁 Daily (resets every day)</option>
-            <option value="weekdays" ${chore.recurrence === 'weekdays' ? 'selected' : ''}>🔁 Weekdays (Mon–Fri)</option>
-            <option value="weekly" ${chore.recurrence === 'weekly' ? 'selected' : ''}>🔁 Weekly (pick days)</option>
-          </select>
-          <div class="assign-list" id="ec-days-row" style="display:${chore.recurrence === 'weekly' ? 'flex' : 'none'}">
-            ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => `
-              <label class="assign-item">
-                <input type="checkbox" id="ec-day-${i}" ${(chore.recurrenceDays || []).includes(i) ? 'checked' : ''} />
-                ${day}
-              </label>
-            `).join('')}
-          </div>
-          <label>Assign To</label>
-          <div class="assign-list">
-            ${members.length ? members.map(m => `
-              <label class="assign-item">
-                <input type="checkbox" id="assign-${m.id}" ${(chore.assignedTo || []).includes(m.id) ? 'checked' : ''} />
-                ${esc(m.avatar || m.name[0].toUpperCase())} ${esc(m.name)}
-              </label>
-            `).join('') : '<span class="empty-inline">Add members first.</span>'}
-          </div>
-          <div class="form-actions">
-            <button class="primary-btn" data-action="save-chore" data-id="${editing}">Save</button>
-            <button class="secondary-btn" data-action="cancel-edit">Cancel</button>
-            ${!isNew ? `<button class="danger-btn" data-action="delete-chore" data-id="${editing}">Delete</button>` : ''}
-          </div>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="admin-section">
-        <button class="primary-btn full-btn" data-action="new-chore">+ Add Chore</button>
-        ${chores.map(c => {
-          const assignedNames = (c.assignedTo || [])
-            .map(id => members.find(m => m.id === id)?.name).filter(Boolean).join(', ');
-          const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const recurLabel = c.recurrence === 'daily' ? ' · 🔁 Daily'
-            : c.recurrence === 'weekdays' ? ' · 🔁 Weekdays'
-            : c.recurrence === 'weekly' ? ` · 🔁 ${(c.recurrenceDays || []).map(d => DAY_ABBR[d]).join(',') || 'Weekly'}`
-            : '';
-          return `
-            <div class="admin-item">
-              <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
-              <div class="admin-item-info">
-                <div class="admin-item-title">${esc(c.title)}</div>
-                <div class="admin-item-meta">${esc(assignedNames || 'Unassigned')} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}${recurLabel}</div>
-              </div>
-              <div class="admin-item-actions">
-                <button class="icon-btn dark" data-action="edit-chore" data-id="${c.id}">✏️</button>
-                <button class="icon-btn dark" data-action="reset-chore" data-id="${c.id}" title="Reset completion">🔄</button>
-              </div>
-            </div>
-          `;
-        }).join('')}
-        ${chores.length === 0 ? '<div class="empty">No chores yet.</div>' : ''}
-      </div>
-    `;
-  }
-
-  _renderAdminMembers() {
-    const members = this._data.members || [];
-    const editing = this._state.editingMember;
-
-    if (editing !== null) {
-      const isNew = editing === 'new';
-      const member = isNew ? { name: '', avatar: '' } : members.find(m => m.id === editing) || {};
-      return `
-        <div class="edit-form">
-          <div class="form-title">${isNew ? 'Add Member' : 'Edit Member'}</div>
-          <label>Name</label>
-          <input class="form-input" id="em-name" value="${this._esc(member.name || '')}" placeholder="Name" />
-          <label>Avatar (emoji or initials)</label>
-          <input class="form-input" id="em-avatar" value="${this._esc(member.avatar || '')}" placeholder="e.g. 👦 or JD" />
-          ${!isNew ? `
-            <div class="member-totals">
-              <span>⭐ ${member.points || 0} pts</span>
-              <span>💵 $${num(member.dollars).toFixed(2)}</span>
-            </div>
-            <button class="secondary-btn" data-action="reset-member-earnings" data-id="${editing}">Reset Earnings to $0</button>
-          ` : ''}
-          <div class="form-actions">
-            <button class="primary-btn" data-action="save-member" data-id="${editing}">Save</button>
-            <button class="secondary-btn" data-action="cancel-edit">Cancel</button>
-            ${!isNew ? `<button class="danger-btn" data-action="delete-member" data-id="${editing}">Delete</button>` : ''}
-          </div>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="admin-section">
-        <button class="primary-btn full-btn" data-action="new-member">+ Add Member</button>
-        ${members.map(m => `
-          <div class="admin-item">
-            <span class="tab-avatar small-avatar">${esc(m.avatar || m.name[0].toUpperCase())}</span>
-            <div class="admin-item-info">
-              <div class="admin-item-title">${esc(m.name)}</div>
-              <div class="admin-item-meta">⭐ ${m.points || 0} pts · 💵 $${num(m.dollars).toFixed(2)}</div>
-            </div>
-            <div class="admin-item-actions">
-              <button class="icon-btn dark" data-action="edit-member" data-id="${m.id}">✏️</button>
-              <button class="icon-btn dark" data-action="reset-member-earnings" data-id="${m.id}" title="Reset earnings">💰</button>
-            </div>
-          </div>
-        `).join('')}
-        ${members.length === 0 ? '<div class="empty">No members yet.</div>' : ''}
-      </div>
-    `;
-  }
-
-  _renderAdminPool() {
-    const pool = this._data.pool || [];
-    const members = this._data.members || [];
-    const editing = this._state.editingChore;
-
-    if (editing !== null && (editing === 'new-pool' || pool.find(c => c.id === editing))) {
-      const isNew = editing === 'new-pool';
-      const chore = isNew ? { title: '', emoji: '', points: 0, dollars: 0 } : pool.find(c => c.id === editing) || {};
-      return `
-        <div class="edit-form">
-          <div class="form-title">${isNew ? 'Add Available Chore' : 'Edit Available Chore'}</div>
-          <label>Title</label>
-          <input class="form-input" id="pc-title" value="${this._esc(chore.title || '')}" placeholder="Chore name" />
-          <label>Emoji (optional)</label>
-          <input class="form-input" id="pc-emoji" value="${this._esc(chore.emoji || '')}" placeholder="e.g. 🧹" />
-          <label>Points</label>
-          <input class="form-input" id="pc-points" type="number" min="0" value="${chore.points || 0}" />
-          <label>Dollar Value ($)</label>
-          <input class="form-input" id="pc-dollars" type="number" min="0" step="0.01" value="${chore.dollars || 0}" />
-          <div class="form-actions">
-            <button class="primary-btn" data-action="save-pool-chore" data-id="${editing}">Save</button>
-            <button class="secondary-btn" data-action="cancel-edit">Cancel</button>
-            ${!isNew ? `<button class="danger-btn" data-action="delete-pool-chore" data-id="${editing}">Delete</button>` : ''}
-          </div>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="admin-section">
-        <button class="primary-btn full-btn" data-action="new-pool-chore">+ Add Available Chore</button>
-        ${pool.map(c => {
-          const claimer = c.claimedBy ? members.find(m => m.id === c.claimedBy) : null;
-          return `
-            <div class="admin-item">
-              <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
-              <div class="admin-item-info">
-                <div class="admin-item-title">${esc(c.title)}</div>
-                <div class="admin-item-meta">${claimer ? `Claimed by ${esc(claimer.name)}` : 'Available'} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}</div>
-              </div>
-              <div class="admin-item-actions">
-                <button class="icon-btn dark" data-action="edit-pool-chore" data-id="${c.id}">✏️</button>
-                ${c.claimedBy ? `<button class="icon-btn dark" data-action="unclaim-pool-chore" data-id="${c.id}" title="Unclaim">↩️</button>` : ''}
-                <button class="icon-btn dark" data-action="delete-pool-chore" data-id="${c.id}">🗑️</button>
-              </div>
-            </div>
-          `;
-        }).join('')}
-        ${pool.length === 0 ? '<div class="empty">No pool chores yet.</div>' : ''}
-      </div>
-    `;
-  }
-
-  // ─── EVENTS ──────────────────────────────────────────────────────────────
-
-  _attachEvents() {
-    this.shadowRoot.querySelectorAll('[data-action]').forEach(el => {
-      el.addEventListener('click', e => {
-        e.stopPropagation();
-        this._handleAction(e.currentTarget);
-      });
-    });
-    const pw = this.shadowRoot.getElementById('admin-password');
-    if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') this._adminLogin(); });
-    const recur = this.shadowRoot.getElementById('ec-recurrence');
-    const daysRow = this.shadowRoot.getElementById('ec-days-row');
-    if (recur && daysRow) {
-      recur.addEventListener('change', () => {
-        daysRow.style.display = recur.value === 'weekly' ? 'flex' : 'none';
-      });
-    }
-  }
-
-  _handleAction(el) {
-    const action = el.dataset.action;
-    const id = el.dataset.id;
-
-    switch (action) {
-      case 'set-tab':
-        this._state.activeTab = el.dataset.tab;
-        this._state.claimingChore = null;
-        break;
-      case 'view-admin':
-        this._state.view = 'admin';
-        this._state.editingChore = null;
-        this._state.editingMember = null;
-        break;
-      case 'go-main':
-        this._state.view = 'main';
-        this._state.adminUnlocked = false;
-        break;
-      case 'admin-login':
-        this._adminLogin(); return;
-      case 'admin-logout':
-        this._state.adminUnlocked = false;
-        this._state.view = 'main';
-        break;
-      case 'admin-tab':
-        this._state.adminTab = el.dataset.tab;
-        this._state.editingChore = null;
-        this._state.editingMember = null;
-        break;
-
-      case 'toggle-chore':
-        this._toggleChore(el.dataset.choreid, el.dataset.memberid); return;
-
-      case 'new-chore': this._state.editingChore = 'new'; break;
-      case 'edit-chore': this._state.editingChore = id; break;
-      case 'save-chore': this._saveChore(el.dataset.id); return;
-      case 'delete-chore': this._confirmThen(el, () => this._deleteChore(id)); return;
-      case 'reset-chore': this._confirmThen(el, () => this._resetChore(id)); return;
-      case 'cancel-edit':
-        this._state.editingChore = null;
-        this._state.editingMember = null;
-        break;
-
-      case 'new-member': this._state.editingMember = 'new'; break;
-      case 'edit-member': this._state.editingMember = id; break;
-      case 'save-member': this._saveMember(el.dataset.id); return;
-      case 'delete-member': this._confirmThen(el, () => this._deleteMember(id)); return;
-      case 'reset-member-earnings': this._confirmThen(el, () => this._resetMemberEarnings(id)); return;
-
-      case 'new-pool-chore': this._state.editingChore = 'new-pool'; break;
-      case 'edit-pool-chore': this._state.editingChore = id; break;
-      case 'save-pool-chore': this._savePoolChore(el.dataset.id); return;
-      case 'delete-pool-chore': this._confirmThen(el, () => this._deletePoolChore(id)); return;
-      case 'unclaim-pool-chore': this._unclaimPoolChore(id); return;
-
-      case 'open-claim':
-        this._state.claimingChore = el.dataset.choreid;
-        break;
-      case 'close-claim':
-        this._state.claimingChore = null;
-        break;
-      case 'confirm-claim':
-        this._claimChore(el.dataset.choreid, el.dataset.memberid); return;
-    }
-    this._render();
-  }
-
   // Two-tap confirmation for destructive actions: first tap arms the button
-  // (turns red / shows "Confirm?"), second tap within 3s executes. Modifies
-  // the button in place — no re-render, so nothing else on screen moves.
-  _confirmThen(el, fn) {
-    const key = `${el.dataset.action}:${el.dataset.id || ''}`;
+  // (turns red / shows "Confirm?"), second tap within 3s executes.
+  _confirmThen(key, fn) {
     if (this._confirmKey === key) {
       this._confirmKey = null;
       clearTimeout(this._confirmTimer);
@@ -941,45 +1205,237 @@ class ChoreTrackerCard extends HTMLElement {
       return;
     }
     this._confirmKey = key;
-    const origText = el.textContent;
-    const origBg = el.style.background;
-    el.textContent = el.classList.contains('icon-btn') ? '❗' : 'Confirm?';
-    el.style.background = '#c62828';
-    el.style.color = '#fff';
     clearTimeout(this._confirmTimer);
     this._confirmTimer = setTimeout(() => {
       this._confirmKey = null;
-      if (el.isConnected) {
-        el.textContent = origText;
-        el.style.background = origBg;
-        el.style.color = '';
-      }
-    }, 3000);
+      this.requestUpdate();
+    }, 3e3);
+    this.requestUpdate();
   }
-
+  _dangerBtn(key, label, fn) {
+    const armed = this._confirmKey === key;
+    return b2`
+      <button class="danger-btn ${armed ? "armed" : ""}" @click=${() => this._confirmThen(key, fn)}>
+        ${armed ? "Confirm?" : label}
+      </button>
+    `;
+  }
+  _dangerIconBtn(key, icon, title, fn) {
+    const armed = this._confirmKey === key;
+    return b2`
+      <button class="icon-btn dark ${armed ? "armed" : ""}" title=${title}
+        @click=${() => this._confirmThen(key, fn)}>
+        ${armed ? "\u2757" : icon}
+      </button>
+    `;
+  }
+  _renderAdminChores() {
+    const members = this._data.members || [];
+    const chores = this._data.chores || [];
+    const editing = this._state.editingChore;
+    if (editing !== null) {
+      const isNew = editing === "new";
+      const chore = isNew ? { title: "", emoji: "", points: 0, dollars: 0, assignedTo: [], recurrence: "none" } : chores.find((c4) => c4.id === editing) || {};
+      const recurrence = this._editRecurrence ?? (chore.recurrence || "none");
+      return b2`
+        <div class="edit-form">
+          <div class="form-title">${isNew ? "Add Chore" : "Edit Chore"}</div>
+          <label>Title</label>
+          <input class="form-input" id="ec-title" .value=${chore.title || ""} placeholder="Chore name" />
+          <label>Emoji (optional override)</label>
+          <input class="form-input" id="ec-emoji" .value=${chore.emoji || ""} placeholder="e.g. 🧹" />
+          <label>Points</label>
+          <input class="form-input" id="ec-points" type="number" min="0" .value=${String(chore.points || 0)} />
+          <label>Dollar Value ($)</label>
+          <input class="form-input" id="ec-dollars" type="number" min="0" step="0.01" .value=${String(chore.dollars || 0)} />
+          <label>Recurrence</label>
+          <select class="form-input" id="ec-recurrence" .value=${recurrence}
+            @change=${(e4) => {
+        this._editRecurrence = e4.target.value;
+        this.requestUpdate();
+      }}>
+            <option value="none">One-time / No reset</option>
+            <option value="daily">🔁 Daily (resets every day)</option>
+            <option value="weekdays">🔁 Weekdays (Mon–Fri)</option>
+            <option value="weekly">🔁 Weekly (pick days)</option>
+          </select>
+          ${recurrence === "weekly" ? b2`
+            <div class="assign-list">
+              ${DAY_ABBR.map((day, i5) => b2`
+                <label class="assign-item">
+                  <input type="checkbox" id="ec-day-${i5}" .checked=${(chore.recurrenceDays || []).includes(i5)} />
+                  ${day}
+                </label>
+              `)}
+            </div>
+          ` : A}
+          <label>Assign To</label>
+          <div class="assign-list">
+            ${members.length ? members.map((m2) => b2`
+              <label class="assign-item">
+                <input type="checkbox" id="assign-${m2.id}" .checked=${(chore.assignedTo || []).includes(m2.id)} />
+                ${m2.avatar || m2.name[0].toUpperCase()} ${m2.name}
+              </label>
+            `) : b2`<span class="empty-inline">Add members first.</span>`}
+          </div>
+          <div class="form-actions">
+            <button class="primary-btn" @click=${() => this._saveChore(editing)}>Save</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
+            ${!isNew ? this._dangerBtn(`del-chore:${editing}`, "Delete", () => this._deleteChore(editing)) : A}
+          </div>
+        </div>
+      `;
+    }
+    return b2`
+      <div class="admin-section">
+        <button class="primary-btn full-btn" @click=${() => this._startEditChore("new")}>+ Add Chore</button>
+        ${chores.map((c4) => {
+      const assignedNames = (c4.assignedTo || []).map((id) => members.find((m2) => m2.id === id)?.name).filter(Boolean).join(", ");
+      const recurLabel = c4.recurrence && c4.recurrence !== "none" ? ` \xB7 ${recurrenceLabel(c4)}` : "";
+      return b2`
+            <div class="admin-item">
+              <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
+              <div class="admin-item-info">
+                <div class="admin-item-title">${c4.title}</div>
+                <div class="admin-item-meta">${assignedNames || "Unassigned"} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}${recurLabel}</div>
+              </div>
+              <div class="admin-item-actions">
+                <button class="icon-btn dark" @click=${() => this._startEditChore(c4.id)}>✏️</button>
+                ${this._dangerIconBtn(`reset-chore:${c4.id}`, "\u{1F504}", "Reset completion", () => this._resetChore(c4.id))}
+              </div>
+            </div>
+          `;
+    })}
+        ${chores.length === 0 ? b2`<div class="empty">No chores yet.</div>` : A}
+      </div>
+    `;
+  }
+  _startEditChore(id) {
+    this._editRecurrence = null;
+    this._setState({ editingChore: id });
+  }
+  _cancelEdit() {
+    this._editRecurrence = null;
+    this._setState({ editingChore: null, editingMember: null });
+  }
+  _renderAdminMembers() {
+    const members = this._data.members || [];
+    const editing = this._state.editingMember;
+    if (editing !== null) {
+      const isNew = editing === "new";
+      const member = isNew ? { name: "", avatar: "" } : members.find((m2) => m2.id === editing) || {};
+      return b2`
+        <div class="edit-form">
+          <div class="form-title">${isNew ? "Add Member" : "Edit Member"}</div>
+          <label>Name</label>
+          <input class="form-input" id="em-name" .value=${member.name || ""} placeholder="Name" />
+          <label>Avatar (emoji or initials)</label>
+          <input class="form-input" id="em-avatar" .value=${member.avatar || ""} placeholder="e.g. 👦 or JD" />
+          ${!isNew ? b2`
+            <div class="member-totals">
+              <span>⭐ ${member.points || 0} pts</span>
+              <span>💵 $${num(member.dollars).toFixed(2)}</span>
+            </div>
+            ${this._dangerBtn(`reset-earn:${editing}`, "Reset Earnings to $0", () => this._resetMemberEarnings(editing))}
+          ` : A}
+          <div class="form-actions">
+            <button class="primary-btn" @click=${() => this._saveMember(editing)}>Save</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
+            ${!isNew ? this._dangerBtn(`del-member:${editing}`, "Delete", () => this._deleteMember(editing)) : A}
+          </div>
+        </div>
+      `;
+    }
+    return b2`
+      <div class="admin-section">
+        <button class="primary-btn full-btn" @click=${() => this._setState({ editingMember: "new" })}>+ Add Member</button>
+        ${members.map((m2) => b2`
+          <div class="admin-item">
+            <span class="tab-avatar small-avatar">${m2.avatar || m2.name[0].toUpperCase()}</span>
+            <div class="admin-item-info">
+              <div class="admin-item-title">${m2.name}</div>
+              <div class="admin-item-meta">⭐ ${m2.points || 0} pts · 💵 $${num(m2.dollars).toFixed(2)}</div>
+            </div>
+            <div class="admin-item-actions">
+              <button class="icon-btn dark" @click=${() => this._setState({ editingMember: m2.id })}>✏️</button>
+              ${this._dangerIconBtn(`reset-earn:${m2.id}`, "\u{1F4B0}", "Reset earnings", () => this._resetMemberEarnings(m2.id))}
+            </div>
+          </div>
+        `)}
+        ${members.length === 0 ? b2`<div class="empty">No members yet.</div>` : A}
+      </div>
+    `;
+  }
+  _renderAdminPool() {
+    const pool = this._data.pool || [];
+    const members = this._data.members || [];
+    const editing = this._state.editingChore;
+    if (editing !== null && (editing === "new-pool" || pool.find((c4) => c4.id === editing))) {
+      const isNew = editing === "new-pool";
+      const chore = isNew ? { title: "", emoji: "", points: 0, dollars: 0 } : pool.find((c4) => c4.id === editing) || {};
+      return b2`
+        <div class="edit-form">
+          <div class="form-title">${isNew ? "Add Available Chore" : "Edit Available Chore"}</div>
+          <label>Title</label>
+          <input class="form-input" id="pc-title" .value=${chore.title || ""} placeholder="Chore name" />
+          <label>Emoji (optional)</label>
+          <input class="form-input" id="pc-emoji" .value=${chore.emoji || ""} placeholder="e.g. 🧹" />
+          <label>Points</label>
+          <input class="form-input" id="pc-points" type="number" min="0" .value=${String(chore.points || 0)} />
+          <label>Dollar Value ($)</label>
+          <input class="form-input" id="pc-dollars" type="number" min="0" step="0.01" .value=${String(chore.dollars || 0)} />
+          <div class="form-actions">
+            <button class="primary-btn" @click=${() => this._savePoolChore(editing)}>Save</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
+            ${!isNew ? this._dangerBtn(`del-pool:${editing}`, "Delete", () => this._deletePoolChore(editing)) : A}
+          </div>
+        </div>
+      `;
+    }
+    return b2`
+      <div class="admin-section">
+        <button class="primary-btn full-btn" @click=${() => this._setState({ editingChore: "new-pool" })}>+ Add Available Chore</button>
+        ${pool.map((c4) => {
+      const claimer = c4.claimedBy ? members.find((m2) => m2.id === c4.claimedBy) : null;
+      return b2`
+            <div class="admin-item">
+              <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
+              <div class="admin-item-info">
+                <div class="admin-item-title">${c4.title}</div>
+                <div class="admin-item-meta">${claimer ? `Claimed by ${claimer.name}` : "Available"} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}</div>
+              </div>
+              <div class="admin-item-actions">
+                <button class="icon-btn dark" @click=${() => this._setState({ editingChore: c4.id })}>✏️</button>
+                ${c4.claimedBy ? b2`<button class="icon-btn dark" title="Unclaim" @click=${() => this._unclaimPoolChore(c4.id)}>↩️</button>` : A}
+                ${this._dangerIconBtn(`del-pool:${c4.id}`, "\u{1F5D1}\uFE0F", "Delete", () => this._deletePoolChore(c4.id))}
+              </div>
+            </div>
+          `;
+    })}
+        ${pool.length === 0 ? b2`<div class="empty">No pool chores yet.</div>` : A}
+      </div>
+    `;
+  }
   // ─── DATA MUTATIONS ──────────────────────────────────────────────────────
-
   _adminLogin() {
-    const input = this.shadowRoot.getElementById('admin-password');
-    const errEl = this.shadowRoot.getElementById('login-error');
-    if (input && input.value === String(this._config.admin_password || '1234')) {
-      this._state.adminUnlocked = true;
-      this._render();
+    const input = this.shadowRoot.getElementById("admin-password");
+    if (input && input.value === String(this._config.admin_password || "1234")) {
+      this._loginError = "";
+      this._setState({ adminUnlocked: true });
     } else {
-      if (errEl) errEl.textContent = 'Incorrect password.';
+      this._loginError = "Incorrect password.";
+      this.requestUpdate();
     }
   }
-
   _toggleChore(choreId, memberId) {
-    const chore = (this._data.chores || []).find(c => c.id === choreId);
+    const chore = (this._data.chores || []).find((c4) => c4.id === choreId);
     if (!chore) return;
     if (!chore.memberStates) chore.memberStates = {};
     if (!chore.memberStates[memberId]) chore.memberStates[memberId] = {};
     const state = chore.memberStates[memberId];
     const wasCompleted = state.completed;
     state.completed = !wasCompleted;
-
-    const member = (this._data.members || []).find(m => m.id === memberId);
+    const member = (this._data.members || []).find((m2) => m2.id === memberId);
     if (member) {
       const pts = num(chore.points);
       const dlr = num(chore.dollars);
@@ -991,75 +1447,67 @@ class ChoreTrackerCard extends HTMLElement {
         member.dollars = Math.max(0, round2(num(member.dollars) - dlr));
       }
     }
-    // Fire HA bus events so users can automate on chore activity
-    // (celebration lights, notifications, allowance payouts…)
     if (member && !wasCompleted) {
-      this._fireHAEvent('chore_tracker_chore_completed', {
+      this._fireHAEvent("chore_tracker_chore_completed", {
         member: member.name,
         chore: chore.title,
         points: num(chore.points),
-        dollars: num(chore.dollars),
+        dollars: num(chore.dollars)
       });
       if (this._allChoresDone(memberId)) {
-        this._fireHAEvent('chore_tracker_all_done', {
+        this._fireHAEvent("chore_tracker_all_done", {
           member: member.name,
           total_points: num(member.points),
-          total_dollars: num(member.dollars),
+          total_dollars: num(member.dollars)
         });
       }
     }
-
     this._saveData();
-    this._render();
+    this.requestUpdate();
   }
-
   _fireHAEvent(eventType, data) {
     if (!this._hass?.callApi) return;
-    this._hass.callApi('POST', `events/${eventType}`, data)
-      .catch(e => console.warn(`ChoreTracker: could not fire ${eventType} event —`, e.message || e));
+    this._hass.callApi("POST", `events/${eventType}`, data).catch((e4) => console.warn(`ChoreTracker: could not fire ${eventType} event \u2014`, e4.message || e4));
   }
-
+  _getInput(id) {
+    return this.shadowRoot.getElementById(id);
+  }
   _saveChore(editing) {
-    const title = this.shadowRoot.getElementById('ec-title')?.value?.trim();
+    const title = this._getInput("ec-title")?.value?.trim();
     if (!title) return;
-    const emoji = this.shadowRoot.getElementById('ec-emoji')?.value?.trim() || '';
-    const points = Math.max(0, Math.round(num(this.shadowRoot.getElementById('ec-points')?.value)));
-    const dollars = Math.max(0, round2(this.shadowRoot.getElementById('ec-dollars')?.value));
-    const recurrence = this.shadowRoot.getElementById('ec-recurrence')?.value || 'none';
+    const emoji = this._getInput("ec-emoji")?.value?.trim() || "";
+    const points = Math.max(0, Math.round(num(this._getInput("ec-points")?.value)));
+    const dollars = Math.max(0, round2(this._getInput("ec-dollars")?.value));
+    const recurrence = this._getInput("ec-recurrence")?.value || "none";
     const recurrenceDays = [];
-    for (let i = 0; i < 7; i++) {
-      if (this.shadowRoot.getElementById(`ec-day-${i}`)?.checked) recurrenceDays.push(i);
+    for (let i5 = 0; i5 < 7; i5++) {
+      if (this._getInput(`ec-day-${i5}`)?.checked) recurrenceDays.push(i5);
     }
     const assignedTo = [];
-    this.shadowRoot.querySelectorAll('[id^="assign-"]').forEach(cb => {
-      if (cb.checked) assignedTo.push(cb.id.replace('assign-', ''));
+    this.shadowRoot.querySelectorAll('[id^="assign-"]').forEach((cb) => {
+      if (cb.checked) assignedTo.push(cb.id.replace("assign-", ""));
     });
-
-    if (editing === 'new') {
+    if (editing === "new") {
       this._data.chores.push({ id: this._uid(), title, emoji, points, dollars, recurrence, recurrenceDays, assignedTo, memberStates: {} });
     } else {
-      const chore = (this._data.chores || []).find(c => c.id === editing);
+      const chore = (this._data.chores || []).find((c4) => c4.id === editing);
       if (chore) Object.assign(chore, { title, emoji, points, dollars, recurrence, recurrenceDays, assignedTo });
     }
     this._saveData();
-    this._state.editingChore = null;
-    this._render();
+    this._cancelEdit();
   }
-
   _deleteChore(id) {
-    this._data.chores = (this._data.chores || []).filter(c => c.id !== id);
+    this._data.chores = (this._data.chores || []).filter((c4) => c4.id !== id);
     this._saveData();
-    this._state.editingChore = null;
-    this._render();
+    this._cancelEdit();
   }
-
   _resetChore(id) {
-    const chore = (this._data.chores || []).find(c => c.id === id);
+    const chore = (this._data.chores || []).find((c4) => c4.id === id);
     if (!chore) return;
-    (chore.assignedTo || []).forEach(memberId => {
-      const state = ((chore.memberStates || {})[memberId] || {});
+    (chore.assignedTo || []).forEach((memberId) => {
+      const state = (chore.memberStates || {})[memberId] || {};
       if (state.completed) {
-        const member = (this._data.members || []).find(m => m.id === memberId);
+        const member = (this._data.members || []).find((m2) => m2.id === memberId);
         if (member) {
           member.points = Math.max(0, num(member.points) - num(chore.points));
           member.dollars = Math.max(0, round2(num(member.dollars) - num(chore.dollars)));
@@ -1068,84 +1516,75 @@ class ChoreTrackerCard extends HTMLElement {
     });
     chore.memberStates = {};
     this._saveData();
-    this._render();
+    this.requestUpdate();
   }
-
   _saveMember(editing) {
-    const name = this.shadowRoot.getElementById('em-name')?.value?.trim();
+    const name = this._getInput("em-name")?.value?.trim();
     if (!name) return;
-    const avatar = this.shadowRoot.getElementById('em-avatar')?.value?.trim() || '';
-    if (editing === 'new') {
+    const avatar = this._getInput("em-avatar")?.value?.trim() || "";
+    if (editing === "new") {
       this._data.members.push({ id: this._uid(), name, avatar, points: 0, dollars: 0 });
     } else {
-      const m = (this._data.members || []).find(m => m.id === editing);
-      if (m) Object.assign(m, { name, avatar });
+      const m2 = (this._data.members || []).find((m3) => m3.id === editing);
+      if (m2) Object.assign(m2, { name, avatar });
     }
     this._saveData();
-    this._state.editingMember = null;
-    this._render();
+    this._cancelEdit();
   }
-
   _deleteMember(id) {
-    this._data.members = (this._data.members || []).filter(m => m.id !== id);
-    (this._data.chores || []).forEach(c => {
-      c.assignedTo = (c.assignedTo || []).filter(mid => mid !== id);
-      if (c.memberStates) delete c.memberStates[id];
+    this._data.members = (this._data.members || []).filter((m2) => m2.id !== id);
+    (this._data.chores || []).forEach((c4) => {
+      c4.assignedTo = (c4.assignedTo || []).filter((mid) => mid !== id);
+      if (c4.memberStates) delete c4.memberStates[id];
     });
     if (this._state.activeTab === id) {
-      this._state.activeTab = (this._data.members[0] || {}).id || 'pool';
+      this._state.activeTab = (this._data.members[0] || {}).id || "pool";
     }
     this._saveData();
-    this._state.editingMember = null;
-    this._render();
+    this._cancelEdit();
   }
-
   _resetMemberEarnings(id) {
-    const m = (this._data.members || []).find(m => m.id === id);
-    if (m) { m.points = 0; m.dollars = 0; }
+    const m2 = (this._data.members || []).find((m3) => m3.id === id);
+    if (m2) {
+      m2.points = 0;
+      m2.dollars = 0;
+    }
     this._saveData();
-    this._render();
+    this.requestUpdate();
   }
-
   _savePoolChore(editing) {
-    const title = this.shadowRoot.getElementById('pc-title')?.value?.trim();
+    const title = this._getInput("pc-title")?.value?.trim();
     if (!title) return;
-    const emoji = this.shadowRoot.getElementById('pc-emoji')?.value?.trim() || '';
-    const points = Math.max(0, Math.round(num(this.shadowRoot.getElementById('pc-points')?.value)));
-    const dollars = Math.max(0, round2(this.shadowRoot.getElementById('pc-dollars')?.value));
-    if (editing === 'new-pool') {
+    const emoji = this._getInput("pc-emoji")?.value?.trim() || "";
+    const points = Math.max(0, Math.round(num(this._getInput("pc-points")?.value)));
+    const dollars = Math.max(0, round2(this._getInput("pc-dollars")?.value));
+    if (editing === "new-pool") {
       if (!this._data.pool) this._data.pool = [];
       this._data.pool.push({ id: this._uid(), title, emoji, points, dollars, claimedBy: null });
     } else {
-      const chore = (this._data.pool || []).find(c => c.id === editing);
+      const chore = (this._data.pool || []).find((c4) => c4.id === editing);
       if (chore) Object.assign(chore, { title, emoji, points, dollars });
     }
     this._saveData();
-    this._state.editingChore = null;
-    this._render();
+    this._cancelEdit();
   }
-
   _deletePoolChore(id) {
-    this._data.pool = (this._data.pool || []).filter(c => c.id !== id);
-    this._data.chores = (this._data.chores || []).filter(c => c._poolRef !== id);
+    this._data.pool = (this._data.pool || []).filter((c4) => c4.id !== id);
+    this._data.chores = (this._data.chores || []).filter((c4) => c4._poolRef !== id);
     this._saveData();
-    this._state.editingChore = null;
-    this._render();
+    this._cancelEdit();
   }
-
   _unclaimPoolChore(id) {
-    const chore = (this._data.pool || []).find(c => c.id === id);
+    const chore = (this._data.pool || []).find((c4) => c4.id === id);
     if (chore) chore.claimedBy = null;
-    this._data.chores = (this._data.chores || []).filter(c => c._poolRef !== id);
+    this._data.chores = (this._data.chores || []).filter((c4) => c4._poolRef !== id);
     this._saveData();
-    this._render();
+    this.requestUpdate();
   }
-
   _claimChore(choreId, memberId) {
-    const poolChore = (this._data.pool || []).find(c => c.id === choreId);
+    const poolChore = (this._data.pool || []).find((c4) => c4.id === choreId);
     if (!poolChore || poolChore.claimedBy) return;
     if (!this._allChoresDone(memberId)) return;
-
     if (!this._data.chores) this._data.chores = [];
     this._data.chores.push({
       id: this._uid(),
@@ -1155,418 +1594,416 @@ class ChoreTrackerCard extends HTMLElement {
       dollars: poolChore.dollars,
       assignedTo: [memberId],
       memberStates: {},
-      recurrence: 'none',
-      _poolRef: choreId,
+      recurrence: "none",
+      _poolRef: choreId
     });
     poolChore.claimedBy = memberId;
-
     this._saveData();
-    this._state.claimingChore = null;
-    this._state.activeTab = memberId;
-    this._render();
+    this._setState({ claimingChore: null, activeTab: memberId });
   }
-
-  _esc(str) {
-    return esc(str);
-  }
-
   // ─── STYLES ──────────────────────────────────────────────────────────────
+  static styles = i`
+    :host { display: block; font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif); }
+    * { box-sizing: border-box; }
+    ha-card {
+      overflow: hidden;
+      color: var(--primary-text-color, #333);
+      position: relative;
+    }
+    .sync-banner {
+      background: #B71C1C; color: #fff;
+      padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
+      text-align: center;
+    }
+    .header {
+      background: #003366;
+      color: #fff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+    }
+    .header-title { flex: 1; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
+    .back-btn {
+      background: rgba(255,255,255,0.15); border: none; color: #fff; cursor: pointer;
+      padding: 5px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.25); }
+    .icon-btn {
+      background: rgba(255,255,255,0.1); border: none; color: #fff; cursor: pointer;
+      width: 34px; height: 34px; border-radius: 6px; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.2); }
+    .icon-btn.dark {
+      background: var(--secondary-background-color, #eee);
+      color: var(--primary-text-color, #333);
+    }
+    .icon-btn.dark:hover { background: var(--divider-color, #ddd); }
+    .icon-btn.dark.armed { background: #c62828; color: #fff; }
 
-  _styles() {
-    return `
-      :host { display: block; font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif); }
-      * { box-sizing: border-box; }
-      ha-card {
-        overflow: hidden;
-        color: var(--primary-text-color, #333);
-        position: relative;
-      }
-      .sync-banner {
-        background: #B71C1C; color: #fff;
-        padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
-        text-align: center;
-      }
-      .header {
-        background: #003366;
-        color: #fff;
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-height: 50px;
-      }
-      .header-title { flex: 1; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
-      .back-btn {
-        background: rgba(255,255,255,0.15); border: none; color: #fff; cursor: pointer;
-        padding: 5px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600;
-      }
-      .back-btn:hover { background: rgba(255,255,255,0.25); }
-      .icon-btn {
-        background: rgba(255,255,255,0.1); border: none; color: #fff; cursor: pointer;
-        width: 34px; height: 34px; border-radius: 6px; font-size: 1rem;
-        display: flex; align-items: center; justify-content: center;
-      }
-      .icon-btn:hover { background: rgba(255,255,255,0.2); }
-      .icon-btn.dark {
-        background: var(--secondary-background-color, #eee);
-        color: var(--primary-text-color, #333);
-      }
-      .icon-btn.dark:hover { background: var(--divider-color, #ddd); }
+    /* TAB BAR */
+    .tab-bar {
+      display: flex;
+      overflow-x: auto;
+      background: #003366;
+      border-bottom: 2px solid #4FC3F7;
+      scrollbar-width: none;
+      gap: 2px;
+      padding: 0 4px;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .admin-tabs { background: var(--secondary-background-color, #f5f5f5); border-bottom-color: var(--divider-color, #ddd); }
+    .member-tab {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: transparent; border: none; cursor: pointer;
+      padding: 8px 12px; min-width: 70px;
+      color: rgba(255,255,255,0.7); font-size: 0.72rem; font-weight: 600;
+      border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap;
+    }
+    .admin-tabs .member-tab { color: var(--secondary-text-color, #666); }
+    .member-tab.active { color: #fff; border-bottom-color: #4FC3F7; }
+    .admin-tabs .member-tab.active { color: #0288D1; border-bottom-color: #0288D1; background: var(--card-background-color, #fff); }
+    .member-tab:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .admin-tabs .member-tab:hover { color: #0288D1; background: var(--hover-color, rgba(2,136,209,0.05)); }
+    .tab-avatar {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #0077b6, #4FC3F7);
+      color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .tab-avatar.done { background: linear-gradient(135deg, #2e7d32, #66bb6a); }
+    .tab-avatar.pool-icon { background: linear-gradient(135deg, #4a148c, #9c27b0); font-size: 1rem; }
+    .small-avatar {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #003366, #0288D1);
+      color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700;
+    }
+    .tab-name { font-size: 0.7rem; }
+    .tab-badge {
+      background: #4FC3F7; color: #003366;
+      border-radius: 10px; padding: 1px 6px;
+      font-size: 0.65rem; font-weight: 700; min-width: 20px; text-align: center;
+    }
+    .tab-badge.badge-done { background: #66bb6a; color: #fff; }
 
-      /* TAB BAR */
-      .tab-bar {
-        display: flex;
-        overflow-x: auto;
-        background: #003366;
-        border-bottom: 2px solid #4FC3F7;
-        scrollbar-width: none;
-        gap: 2px;
-        padding: 0 4px;
-      }
-      .tab-bar::-webkit-scrollbar { display: none; }
-      .admin-tabs { background: var(--secondary-background-color, #f5f5f5); border-bottom-color: var(--divider-color, #ddd); }
-      .member-tab {
-        display: flex; flex-direction: column; align-items: center; gap: 2px;
-        background: transparent; border: none; cursor: pointer;
-        padding: 8px 12px; min-width: 70px;
-        color: rgba(255,255,255,0.7); font-size: 0.72rem; font-weight: 600;
-        border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap;
-      }
-      .admin-tabs .member-tab { color: var(--secondary-text-color, #666); }
-      .member-tab.active { color: #fff; border-bottom-color: #4FC3F7; }
-      .admin-tabs .member-tab.active { color: #0288D1; border-bottom-color: #0288D1; background: var(--card-background-color, #fff); }
-      .member-tab:hover { color: #fff; background: rgba(255,255,255,0.08); }
-      .admin-tabs .member-tab:hover { color: #0288D1; background: var(--hover-color, rgba(2,136,209,0.05)); }
-      .tab-avatar {
-        width: 32px; height: 32px;
-        background: linear-gradient(135deg, #0077b6, #4FC3F7);
-        color: #fff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
-        transition: all 0.2s;
-      }
-      .tab-avatar.done { background: linear-gradient(135deg, #2e7d32, #66bb6a); }
-      .tab-avatar.pool-icon { background: linear-gradient(135deg, #4a148c, #9c27b0); font-size: 1rem; }
-      .small-avatar {
-        width: 36px; height: 36px;
-        background: linear-gradient(135deg, #003366, #0288D1);
-        color: #fff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1rem; font-weight: 700;
-      }
-      .tab-name { font-size: 0.7rem; }
-      .tab-badge {
-        background: #4FC3F7; color: #003366;
-        border-radius: 10px; padding: 1px 6px;
-        font-size: 0.65rem; font-weight: 700; min-width: 20px; text-align: center;
-      }
-      .tab-badge.badge-done { background: #66bb6a; color: #fff; }
+    /* CONTENT */
+    .tab-content { padding: 12px; }
 
-      /* CONTENT */
-      .tab-content { padding: 12px; }
+    /* MEMBER PANEL */
+    .member-summary {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 12px;
+      background: linear-gradient(135deg, rgba(0,51,102,0.05), rgba(79,195,247,0.08));
+      border-radius: 10px; margin-bottom: 12px;
+      border: 1px solid rgba(79,195,247,0.2);
+    }
+    .summary-left { display: flex; align-items: center; gap: 12px; }
+    .summary-avatar {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #003366, #0288D1);
+      color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; font-weight: 700; flex-shrink: 0;
+    }
+    .summary-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .summary-stats { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stat-chip {
+      font-size: 0.75rem; padding: 2px 8px; border-radius: 10px;
+      background: rgba(0,51,102,0.1); color: var(--primary-text-color, #333);
+      font-weight: 600;
+    }
+    .summary-progress { flex: 1; max-width: 140px; text-align: right; }
+    .progress-bar-wrap {
+      height: 7px; background: var(--divider-color, #e0e0e0);
+      border-radius: 4px; overflow: hidden; margin-bottom: 4px;
+    }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, #4FC3F7, #0288D1);
+      border-radius: 4px; transition: width 0.4s ease;
+    }
+    .progress-label { font-size: 0.72rem; color: var(--secondary-text-color, #888); }
 
-      /* MEMBER PANEL */
-      .member-summary {
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 12px; padding: 12px;
-        background: linear-gradient(135deg, rgba(0,51,102,0.05), rgba(79,195,247,0.08));
-        border-radius: 10px; margin-bottom: 12px;
-        border: 1px solid rgba(79,195,247,0.2);
-      }
-      .summary-left { display: flex; align-items: center; gap: 12px; }
-      .summary-avatar {
-        width: 44px; height: 44px;
-        background: linear-gradient(135deg, #003366, #0288D1);
-        color: #fff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.3rem; font-weight: 700; flex-shrink: 0;
-      }
-      .summary-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
-      .summary-stats { display: flex; gap: 6px; flex-wrap: wrap; }
-      .stat-chip {
-        font-size: 0.75rem; padding: 2px 8px; border-radius: 10px;
-        background: rgba(0,51,102,0.1); color: var(--primary-text-color, #333);
-        font-weight: 600;
-      }
-      .summary-progress { flex: 1; max-width: 140px; text-align: right; }
-      .progress-bar-wrap {
-        height: 7px; background: var(--divider-color, #e0e0e0);
-        border-radius: 4px; overflow: hidden; margin-bottom: 4px;
-      }
-      .progress-bar {
-        height: 100%; background: linear-gradient(90deg, #4FC3F7, #0288D1);
-        border-radius: 4px; transition: width 0.4s ease;
-      }
-      .progress-label { font-size: 0.72rem; color: var(--secondary-text-color, #888); }
+    /* CHORE LIST */
+    .chores-list { display: flex; flex-direction: column; gap: 7px; }
+    .chore-item {
+      display: flex; align-items: center; gap: 9px;
+      background: var(--secondary-background-color, #f9f9f9);
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: 10px; padding: 9px 11px;
+      transition: all 0.2s;
+    }
+    .chore-item.completed { opacity: 0.55; background: rgba(67,160,71,0.06); border-color: rgba(67,160,71,0.3); }
+    .chore-item.claimed { opacity: 0.6; }
+    .chore-check {
+      width: 24px; height: 24px; border: 2px solid var(--divider-color, #bbb);
+      border-radius: 5px; background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; color: #fff; flex-shrink: 0; transition: all 0.2s;
+    }
+    .chore-check.checked { background: #43A047; border-color: #43A047; }
+    .chore-emoji { font-size: 1.25rem; flex-shrink: 0; }
+    .chore-body { flex: 1; min-width: 0; }
+    .chore-title { font-size: 0.9rem; font-weight: 500; display: block; }
+    .chore-recur { font-size: 0.72rem; color: #0288D1; }
+    .chore-rewards { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+    .reward-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; font-weight: 600; }
+    .reward-badge.points { background: rgba(255,193,7,0.15); color: #E65100; }
+    .reward-badge.dollars { background: rgba(67,160,71,0.15); color: #2E7D32; }
 
-      /* CHORE LIST */
-      .chores-list { display: flex; flex-direction: column; gap: 7px; }
-      .chore-item {
-        display: flex; align-items: center; gap: 9px;
-        background: var(--secondary-background-color, #f9f9f9);
-        border: 1px solid var(--divider-color, #e8e8e8);
-        border-radius: 10px; padding: 9px 11px;
-        transition: all 0.2s;
-      }
-      .chore-item.completed { opacity: 0.55; background: rgba(67,160,71,0.06); border-color: rgba(67,160,71,0.3); }
-      .chore-item.claimed { opacity: 0.6; }
-      .chore-check {
-        width: 24px; height: 24px; border: 2px solid var(--divider-color, #bbb);
-        border-radius: 5px; background: transparent; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.8rem; color: #fff; flex-shrink: 0; transition: all 0.2s;
-      }
-      .chore-check.checked { background: #43A047; border-color: #43A047; }
-      .chore-emoji { font-size: 1.25rem; flex-shrink: 0; }
-      .chore-body { flex: 1; min-width: 0; }
-      .chore-title { font-size: 0.9rem; font-weight: 500; display: block; }
-      .chore-recur { font-size: 0.72rem; color: #0288D1; }
-      .chore-rewards { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-      .reward-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; font-weight: 600; }
-      .reward-badge.points { background: rgba(255,193,7,0.15); color: #E65100; }
-      .reward-badge.dollars { background: rgba(67,160,71,0.15); color: #2E7D32; }
+    /* CLAIM BTN */
+    .claim-btn {
+      padding: 5px 11px; background: #0288D1; color: #fff; border: none;
+      border-radius: 7px; cursor: pointer; font-size: 0.78rem; font-weight: 600;
+      flex-shrink: 0; transition: background 0.2s;
+    }
+    .claim-btn:hover:not(.disabled) { background: #01579B; }
+    .claim-btn.disabled { background: var(--disabled-color, #ccc); cursor: not-allowed; color: #888; }
 
-      /* CLAIM BTN */
-      .claim-btn {
-        padding: 5px 11px; background: #0288D1; color: #fff; border: none;
-        border-radius: 7px; cursor: pointer; font-size: 0.78rem; font-weight: 600;
-        flex-shrink: 0; transition: background 0.2s;
-      }
-      .claim-btn:hover:not(.disabled) { background: #01579B; }
-      .claim-btn.disabled { background: var(--disabled-color, #ccc); cursor: not-allowed; color: #888; }
+    /* POOL */
+    .pool-header { margin-bottom: 10px; }
+    .pool-eligible { font-size: 0.82rem; color: #2e7d32; font-weight: 600; }
+    .pool-none { font-size: 0.82rem; color: var(--secondary-text-color, #888); }
+    .section-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: #0288D1; margin: 12px 0 6px;
+    }
+    .claimed-list { opacity: 0.7; }
 
-      /* POOL */
-      .pool-header { margin-bottom: 10px; }
-      .pool-eligible { font-size: 0.82rem; color: #2e7d32; font-weight: 600; }
-      .pool-none { font-size: 0.82rem; color: var(--secondary-text-color, #888); }
-      .section-label {
-        font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 1px; color: #0288D1; margin: 12px 0 6px;
-      }
-      .claimed-list { opacity: 0.7; }
+    /* CLAIM MODAL */
+    .modal-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10; border-radius: inherit;
+    }
+    .modal {
+      background: var(--ha-card-background, #fff);
+      border-radius: 14px; padding: 20px; width: 90%; max-width: 320px;
+      display: flex; flex-direction: column; gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .modal-title { font-size: 1rem; font-weight: 700; color: #003366; }
+    .modal-subtitle { font-size: 0.83rem; color: var(--secondary-text-color, #666); }
+    .modal-members { display: flex; flex-direction: column; gap: 8px; }
+    .modal-member-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; background: var(--secondary-background-color, #f5f5f5);
+      border: 1.5px solid var(--divider-color, #ddd);
+      border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
+      color: var(--primary-text-color, #333); transition: all 0.2s;
+    }
+    .modal-member-btn:hover { border-color: #0288D1; background: rgba(2,136,209,0.06); color: #003366; }
+    .modal-avatar {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #003366, #0288D1);
+      color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700;
+    }
 
-      /* CLAIM MODAL */
-      .modal-overlay {
-        position: absolute; inset: 0;
-        background: rgba(0,0,0,0.45);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 10; border-radius: inherit;
-      }
-      .modal {
-        background: var(--ha-card-background, #fff);
-        border-radius: 14px; padding: 20px; width: 90%; max-width: 320px;
-        display: flex; flex-direction: column; gap: 12px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-      }
-      .modal-title { font-size: 1rem; font-weight: 700; color: #003366; }
-      .modal-subtitle { font-size: 0.83rem; color: var(--secondary-text-color, #666); }
-      .modal-members { display: flex; flex-direction: column; gap: 8px; }
-      .modal-member-btn {
-        display: flex; align-items: center; gap: 12px;
-        padding: 10px 14px; background: var(--secondary-background-color, #f5f5f5);
-        border: 1.5px solid var(--divider-color, #ddd);
-        border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
-        color: var(--primary-text-color, #333); transition: all 0.2s;
-      }
-      .modal-member-btn:hover { border-color: #0288D1; background: rgba(2,136,209,0.06); color: #003366; }
-      .modal-avatar {
-        width: 36px; height: 36px;
-        background: linear-gradient(135deg, #003366, #0288D1);
-        color: #fff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1rem; font-weight: 700;
-      }
+    /* CLAIM BANNER */
+    .claim-banner {
+      margin-top: 12px; padding: 11px 14px;
+      background: linear-gradient(135deg, #43A047, #1B5E20);
+      color: #fff; border-radius: 10px; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; text-align: center;
+    }
+    .claim-banner:hover { opacity: 0.9; }
 
-      /* CLAIM BANNER */
-      .claim-banner {
-        margin-top: 12px; padding: 11px 14px;
-        background: linear-gradient(135deg, #43A047, #1B5E20);
-        color: #fff; border-radius: 10px; cursor: pointer;
-        font-size: 0.88rem; font-weight: 600; text-align: center;
-      }
-      .claim-banner:hover { opacity: 0.9; }
-
-      /* ADMIN */
-      .admin-login {
-        display: flex; flex-direction: column; align-items: center;
-        gap: 14px; padding: 32px 24px;
-      }
-      .login-icon { font-size: 2.8rem; }
-      .login-title { font-size: 1rem; font-weight: 700; }
-      .admin-input {
-        width: 100%; max-width: 240px; padding: 10px 14px;
-        border: 1.5px solid var(--divider-color, #ccc); border-radius: 8px;
-        font-size: 1rem; background: var(--card-background-color, #fff);
-        color: var(--primary-text-color, #333); text-align: center;
-      }
-      .admin-input:focus { border-color: #0288D1; outline: none; }
-      .login-error { color: #c62828; font-size: 0.82rem; min-height: 16px; }
-      .admin-section { display: flex; flex-direction: column; gap: 8px; }
-      .admin-item {
-        display: flex; align-items: center; gap: 10px;
-        background: var(--secondary-background-color, #f9f9f9);
-        border: 1px solid var(--divider-color, #e8e8e8);
-        border-radius: 10px; padding: 9px 11px;
-      }
-      .admin-item-info { flex: 1; min-width: 0; }
-      .admin-item-title { font-size: 0.88rem; font-weight: 600; }
-      .admin-item-meta { font-size: 0.74rem; color: var(--secondary-text-color, #777); margin-top: 2px; }
-      .admin-item-actions { display: flex; gap: 4px; }
-      .edit-form { display: flex; flex-direction: column; gap: 7px; }
-      .form-title { font-size: 1rem; font-weight: 700; color: #003366; margin-bottom: 4px; }
-      .edit-form label { font-size: 0.78rem; font-weight: 600; color: var(--secondary-text-color, #666); margin-top: 3px; }
-      .form-input {
-        padding: 8px 11px; border: 1.5px solid var(--divider-color, #ccc);
-        border-radius: 7px; font-size: 0.88rem;
-        background: var(--card-background-color, #fff); color: var(--primary-text-color, #333);
-        width: 100%;
-      }
-      .form-input:focus { border-color: #0288D1; outline: none; }
-      select.form-input { cursor: pointer; }
-      .assign-list { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0; }
-      .assign-item {
-        display: flex; align-items: center; gap: 6px; font-size: 0.84rem;
-        cursor: pointer; padding: 5px 10px;
-        background: var(--secondary-background-color, #f5f5f5);
-        border-radius: 7px; border: 1px solid var(--divider-color, #e0e0e0);
-      }
-      .empty-inline { font-size: 0.82rem; color: var(--secondary-text-color, #999); }
-      .form-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-      .member-totals {
-        display: flex; gap: 16px; padding: 9px 12px;
-        background: var(--secondary-background-color, #f5f5f5);
-        border-radius: 7px; font-size: 0.85rem; font-weight: 600;
-      }
-      .primary-btn {
-        padding: 8px 16px; background: #003366; color: #fff; border: none;
-        border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
-      }
-      .primary-btn:hover { background: #01579B; }
-      .full-btn { width: 100%; }
-      .secondary-btn {
-        padding: 8px 16px; background: var(--secondary-background-color, #f5f5f5);
-        color: var(--primary-text-color, #333); border: 1.5px solid var(--divider-color, #ccc);
-        border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
-      }
-      .secondary-btn:hover { background: var(--hover-color, #e5e5e5); }
-      .danger-btn {
-        padding: 8px 16px; background: #c62828; color: #fff; border: none;
-        border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
-      }
-      .danger-btn:hover { background: #b71c1c; }
-      .empty {
-        text-align: center; color: var(--secondary-text-color, #999);
-        padding: 20px; font-size: 0.88rem;
-      }
-      .loading {
-        display: flex; flex-direction: column; align-items: center;
-        gap: 14px; padding: 40px 20px;
-        color: var(--secondary-text-color, #888); font-size: 0.88rem;
-      }
-      .loading-spinner {
-        width: 32px; height: 32px;
-        border: 3px solid var(--divider-color, #e0e0e0);
-        border-top-color: #0288D1;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-    `;
-  }
-
+    /* ADMIN */
+    .admin-login {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; padding: 32px 24px;
+    }
+    .login-icon { font-size: 2.8rem; }
+    .login-title { font-size: 1rem; font-weight: 700; }
+    .admin-input {
+      width: 100%; max-width: 240px; padding: 10px 14px;
+      border: 1.5px solid var(--divider-color, #ccc); border-radius: 8px;
+      font-size: 1rem; background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #333); text-align: center;
+    }
+    .admin-input:focus { border-color: #0288D1; outline: none; }
+    .login-error { color: #c62828; font-size: 0.82rem; min-height: 16px; }
+    .admin-section { display: flex; flex-direction: column; gap: 8px; }
+    .admin-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--secondary-background-color, #f9f9f9);
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: 10px; padding: 9px 11px;
+    }
+    .admin-item-info { flex: 1; min-width: 0; }
+    .admin-item-title { font-size: 0.88rem; font-weight: 600; }
+    .admin-item-meta { font-size: 0.74rem; color: var(--secondary-text-color, #777); margin-top: 2px; }
+    .admin-item-actions { display: flex; gap: 4px; }
+    .edit-form { display: flex; flex-direction: column; gap: 7px; }
+    .form-title { font-size: 1rem; font-weight: 700; color: #003366; margin-bottom: 4px; }
+    .edit-form label { font-size: 0.78rem; font-weight: 600; color: var(--secondary-text-color, #666); margin-top: 3px; }
+    .form-input {
+      padding: 8px 11px; border: 1.5px solid var(--divider-color, #ccc);
+      border-radius: 7px; font-size: 0.88rem;
+      background: var(--card-background-color, #fff); color: var(--primary-text-color, #333);
+      width: 100%;
+    }
+    .form-input:focus { border-color: #0288D1; outline: none; }
+    select.form-input { cursor: pointer; }
+    .assign-list { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0; }
+    .assign-item {
+      display: flex; align-items: center; gap: 6px; font-size: 0.84rem;
+      cursor: pointer; padding: 5px 10px;
+      background: var(--secondary-background-color, #f5f5f5);
+      border-radius: 7px; border: 1px solid var(--divider-color, #e0e0e0);
+    }
+    .empty-inline { font-size: 0.82rem; color: var(--secondary-text-color, #999); }
+    .form-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .member-totals {
+      display: flex; gap: 16px; padding: 9px 12px;
+      background: var(--secondary-background-color, #f5f5f5);
+      border-radius: 7px; font-size: 0.85rem; font-weight: 600;
+    }
+    .primary-btn {
+      padding: 8px 16px; background: #003366; color: #fff; border: none;
+      border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    }
+    .primary-btn:hover { background: #01579B; }
+    .full-btn { width: 100%; }
+    .secondary-btn {
+      padding: 8px 16px; background: var(--secondary-background-color, #f5f5f5);
+      color: var(--primary-text-color, #333); border: 1.5px solid var(--divider-color, #ccc);
+      border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    }
+    .secondary-btn:hover { background: var(--hover-color, #e5e5e5); }
+    .danger-btn {
+      padding: 8px 16px; background: #c62828; color: #fff; border: none;
+      border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    }
+    .danger-btn:hover { background: #b71c1c; }
+    .danger-btn.armed { background: #8b0000; outline: 2px solid #ff8a80; }
+    .empty {
+      text-align: center; color: var(--secondary-text-color, #999);
+      padding: 20px; font-size: 0.88rem;
+    }
+  `;
   static getStubConfig() {
-    return { title: 'Family Chores', admin_password: '1234' };
+    return { title: "Family Chores", admin_password: "1234" };
   }
-
   static getConfigElement() {
-    return document.createElement('chore-tracker-card-editor');
+    return document.createElement("chore-tracker-card-editor");
   }
-
-  getCardSize() { return 5; }
-}
-
-// ─── VISUAL CONFIG EDITOR ────────────────────────────────────────────────────
-// Shown in the dashboard UI editor so users never have to touch YAML.
-class ChoreTrackerCardEditor extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this._rendered = false;
+  getCardSize() {
+    return 5;
   }
-
-  set hass(hass) { this._hass = hass; }
-
+};
+var ChoreTrackerCardEditor = class extends i4 {
+  static styles = i`
+    .editor { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: 500; color: var(--primary-text-color); }
+    input {
+      padding: 10px 12px; border: 1px solid var(--divider-color, #ccc);
+      border-radius: 6px; font-size: 0.95rem;
+      background: var(--card-background-color, #fff); color: var(--primary-text-color, #333);
+    }
+    input:focus { border-color: #0288D1; outline: none; }
+    .hint { font-size: 0.75rem; font-weight: 400; color: var(--secondary-text-color, #888); }
+  `;
+  set hass(hass) {
+    this._hass = hass;
+  }
   setConfig(config) {
     this._config = { ...config };
-    if (!this._rendered) {
-      this._rendered = true;
-      this._render();
-    }
+    this.requestUpdate();
   }
-
-  _render() {
-    this.shadowRoot.innerHTML = `
-      <style>
-        .editor { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
-        label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: 500; color: var(--primary-text-color); }
-        input {
-          padding: 10px 12px; border: 1px solid var(--divider-color, #ccc);
-          border-radius: 6px; font-size: 0.95rem;
-          background: var(--card-background-color, #fff); color: var(--primary-text-color, #333);
-        }
-        input:focus { border-color: #0288D1; outline: none; }
-        .hint { font-size: 0.75rem; font-weight: 400; color: var(--secondary-text-color, #888); }
-      </style>
+  render() {
+    if (!this._config) return A;
+    return b2`
       <div class="editor">
         <label>Title
-          <input id="cfg-title" value="${esc(this._config.title || '')}" placeholder="Family Chores" />
+          <input id="cfg-title" .value=${this._config.title || ""} placeholder="Family Chores"
+            @input=${() => this._valueChanged()} />
         </label>
         <label>Admin password
-          <input id="cfg-password" value="${esc(this._config.admin_password || '')}" placeholder="1234" />
+          <input id="cfg-password" .value=${this._config.admin_password || ""} placeholder="1234"
+            @input=${() => this._valueChanged()} />
           <span class="hint">Gate for the parent console. Not a security boundary — anyone who can edit the dashboard can see it.</span>
         </label>
         <label>Dashboard URL path (advanced)
-          <input id="cfg-urlpath" value="${esc(this._config.lovelace_url_path || '')}" placeholder="auto-detected" />
+          <input id="cfg-urlpath" .value=${this._config.lovelace_url_path || ""} placeholder="auto-detected"
+            @input=${() => this._valueChanged()} />
           <span class="hint">Leave empty unless sync can't find your dashboard automatically.</span>
         </label>
       </div>
     `;
-    this.shadowRoot.querySelectorAll('input').forEach(input => {
-      input.addEventListener('input', () => this._valueChanged());
-    });
   }
-
   _valueChanged() {
-    const get = (id) => this.shadowRoot.getElementById(id)?.value?.trim() || '';
-    // Preserve managed keys (data, storage_key) — only touch what we edit
+    const get = (id) => this.shadowRoot.getElementById(id)?.value?.trim() || "";
     const config = { ...this._config };
-    config.title = get('cfg-title') || 'Chore Tracker';
-    config.admin_password = get('cfg-password') || '1234';
-    const urlPath = get('cfg-urlpath');
+    config.title = get("cfg-title") || "Chore Tracker";
+    config.admin_password = get("cfg-password") || "1234";
+    const urlPath = get("cfg-urlpath");
     if (urlPath) config.lovelace_url_path = urlPath;
     else delete config.lovelace_url_path;
     this._config = config;
-    this.dispatchEvent(new CustomEvent('config-changed', {
+    this.dispatchEvent(new CustomEvent("config-changed", {
       detail: { config },
       bubbles: true,
-      composed: true,
+      composed: true
     }));
   }
+};
+if (!customElements.get("chore-tracker-card")) {
+  customElements.define("chore-tracker-card", ChoreTrackerCard);
 }
-
-if (!customElements.get('chore-tracker-card-editor')) {
-  customElements.define('chore-tracker-card-editor', ChoreTrackerCardEditor);
+if (!customElements.get("chore-tracker-card-editor")) {
+  customElements.define("chore-tracker-card-editor", ChoreTrackerCardEditor);
 }
-
-if (!customElements.get('chore-tracker-card')) {
-  customElements.define('chore-tracker-card', ChoreTrackerCard);
-}
-
 window.customCards = window.customCards || [];
-if (!window.customCards.find(c => c.type === 'chore-tracker-card')) {
+if (!window.customCards.find((c4) => c4.type === "chore-tracker-card")) {
   window.customCards.push({
-    type: 'chore-tracker-card',
-    name: 'Chore Tracker Card',
-    description: 'Track family chores with points and allowance rewards',
+    type: "chore-tracker-card",
+    name: "Chore Tracker Card",
+    description: "Track family chores with points and allowance rewards"
   });
 }
+/*! Bundled license information:
+
+@lit/reactive-element/css-tag.js:
+  (**
+   * @license
+   * Copyright 2019 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+@lit/reactive-element/reactive-element.js:
+  (**
+   * @license
+   * Copyright 2017 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-html/lit-html.js:
+  (**
+   * @license
+   * Copyright 2017 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-element/lit-element.js:
+  (**
+   * @license
+   * Copyright 2017 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+
+lit-html/is-server.js:
+  (**
+   * @license
+   * Copyright 2022 Google LLC
+   * SPDX-License-Identifier: BSD-3-Clause
+   *)
+*/
