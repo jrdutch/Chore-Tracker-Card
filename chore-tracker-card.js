@@ -1,4 +1,4 @@
-// Chore Tracker Card for Home Assistant v1.2.0
+// Chore Tracker Card for Home Assistant v1.2.1
 
 const CHORE_EMOJIS = {
   vacuum: '🧹', vacuuming: '🧹', sweep: '🧹', sweeping: '🧹', mop: '🪣', mopping: '🪣',
@@ -96,56 +96,85 @@ class ChoreTrackerCard extends HTMLElement {
     this._render();
   }
 
+  // Send a websocket message to HA — works across all HA versions
+  async _callWS(msg) {
+    // hass.callWS is the standard custom-card API
+    if (this._hass && typeof this._hass.callWS === 'function') {
+      return this._hass.callWS(msg);
+    }
+    // Fallback for older HA builds that expose connection directly
+    if (this._hass && this._hass.connection && typeof this._hass.connection.sendMessagePromise === 'function') {
+      return this._hass.connection.sendMessagePromise(msg);
+    }
+    throw new Error('No HA websocket API available');
+  }
+
   async _loadData() {
+    const key = this._storageKey();
+    console.log(`ChoreTracker [${key}]: loading data…`);
+
     // 1. Try HA server-side user storage (syncs across all devices)
     if (this._hass) {
       try {
-        const result = await this._hass.connection.sendMessagePromise({
+        const result = await this._callWS({
           type: 'frontend/get_user_data',
-          key: this._storageKey(),
+          key,
         });
-        if (result && result.value && result.value.members) {
-          this._data = result.value;
-          // Cache locally for instant load on revisit
-          localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+        console.log(`ChoreTracker [${key}]: HA storage result →`, result);
+
+        // result.value is null when nothing has been stored yet
+        if (result && result.value !== null && result.value !== undefined) {
+          this._data = {
+            members: result.value.members || [],
+            chores:  result.value.chores  || [],
+            pool:    result.value.pool    || [],
+          };
+          console.log(`ChoreTracker [${key}]: loaded from HA storage`, this._data);
+          localStorage.setItem(key, JSON.stringify(this._data));
           this._checkRecurrenceResets();
           return;
         }
+        console.log(`ChoreTracker [${key}]: HA storage empty, checking localStorage`);
       } catch (e) {
-        console.warn('ChoreTracker: HA user storage unavailable, using localStorage', e);
+        console.warn(`ChoreTracker [${key}]: HA storage read failed →`, e);
       }
     }
 
-    // 2. Fall back to localStorage (may have existing data from before this update)
+    // 2. Fall back to localStorage (pre-v1.2 data lives here)
     try {
-      const raw = localStorage.getItem(this._storageKey());
+      const raw = localStorage.getItem(key);
       if (raw) {
         this._data = JSON.parse(raw);
-        // Migrate existing localStorage data up to HA storage
+        console.log(`ChoreTracker [${key}]: loaded from localStorage, migrating to HA storage…`, this._data);
+        // Push existing data up to HA so other devices can see it
         await this._saveData();
       } else {
+        console.log(`ChoreTracker [${key}]: no data anywhere — starting fresh`);
         this._data = { members: [], chores: [], pool: [] };
       }
     } catch (e) {
+      console.warn(`ChoreTracker [${key}]: localStorage read failed →`, e);
       this._data = { members: [], chores: [], pool: [] };
     }
     this._checkRecurrenceResets();
   }
 
   async _saveData() {
-    // Write to localStorage immediately for fast local access
-    localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+    const key = this._storageKey();
+    // Write to localStorage immediately for fast local reads
+    localStorage.setItem(key, JSON.stringify(this._data));
 
-    // Persist to HA server so all devices stay in sync
+    // Persist to HA server so every device stays in sync
     if (this._hass) {
       try {
-        await this._hass.connection.sendMessagePromise({
+        await this._callWS({
           type: 'frontend/set_user_data',
-          key: this._storageKey(),
+          key,
           value: this._data,
         });
+        console.log(`ChoreTracker [${key}]: saved to HA storage`);
       } catch (e) {
-        console.warn('ChoreTracker: Failed to sync to HA storage', e);
+        console.warn(`ChoreTracker [${key}]: HA storage write failed →`, e);
       }
     }
   }
