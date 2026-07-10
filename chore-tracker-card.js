@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.4.0';
+const CARD_VERSION = '1.4.1';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -869,8 +869,8 @@ class ChoreTrackerCard extends HTMLElement {
       case 'new-chore': this._state.editingChore = 'new'; break;
       case 'edit-chore': this._state.editingChore = id; break;
       case 'save-chore': this._saveChore(el.dataset.id); return;
-      case 'delete-chore': this._deleteChore(id); return;
-      case 'reset-chore': this._resetChore(id); return;
+      case 'delete-chore': this._confirmThen(el, () => this._deleteChore(id)); return;
+      case 'reset-chore': this._confirmThen(el, () => this._resetChore(id)); return;
       case 'cancel-edit':
         this._state.editingChore = null;
         this._state.editingMember = null;
@@ -879,13 +879,13 @@ class ChoreTrackerCard extends HTMLElement {
       case 'new-member': this._state.editingMember = 'new'; break;
       case 'edit-member': this._state.editingMember = id; break;
       case 'save-member': this._saveMember(el.dataset.id); return;
-      case 'delete-member': this._deleteMember(id); return;
-      case 'reset-member-earnings': this._resetMemberEarnings(id); return;
+      case 'delete-member': this._confirmThen(el, () => this._deleteMember(id)); return;
+      case 'reset-member-earnings': this._confirmThen(el, () => this._resetMemberEarnings(id)); return;
 
       case 'new-pool-chore': this._state.editingChore = 'new-pool'; break;
       case 'edit-pool-chore': this._state.editingChore = id; break;
       case 'save-pool-chore': this._savePoolChore(el.dataset.id); return;
-      case 'delete-pool-chore': this._deletePoolChore(id); return;
+      case 'delete-pool-chore': this._confirmThen(el, () => this._deletePoolChore(id)); return;
       case 'unclaim-pool-chore': this._unclaimPoolChore(id); return;
 
       case 'open-claim':
@@ -898,6 +898,34 @@ class ChoreTrackerCard extends HTMLElement {
         this._claimChore(el.dataset.choreid, el.dataset.memberid); return;
     }
     this._render();
+  }
+
+  // Two-tap confirmation for destructive actions: first tap arms the button
+  // (turns red / shows "Confirm?"), second tap within 3s executes. Modifies
+  // the button in place — no re-render, so nothing else on screen moves.
+  _confirmThen(el, fn) {
+    const key = `${el.dataset.action}:${el.dataset.id || ''}`;
+    if (this._confirmKey === key) {
+      this._confirmKey = null;
+      clearTimeout(this._confirmTimer);
+      fn();
+      return;
+    }
+    this._confirmKey = key;
+    const origText = el.textContent;
+    const origBg = el.style.background;
+    el.textContent = el.classList.contains('icon-btn') ? '❗' : 'Confirm?';
+    el.style.background = '#c62828';
+    el.style.color = '#fff';
+    clearTimeout(this._confirmTimer);
+    this._confirmTimer = setTimeout(() => {
+      this._confirmKey = null;
+      if (el.isConnected) {
+        el.textContent = origText;
+        el.style.background = origBg;
+        el.style.color = '';
+      }
+    }, 3000);
   }
 
   // ─── DATA MUTATIONS ──────────────────────────────────────────────────────
