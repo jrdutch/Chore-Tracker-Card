@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.2.4';
+const CARD_VERSION = '1.2.5';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -89,10 +89,13 @@ class ChoreTrackerCard extends HTMLElement {
   // Falls back to localStorage for pre-v1.2 migration.
   _loadData() {
     if (this._config.data && typeof this._config.data === 'object') {
+      // HA deep-freezes the lovelace config it passes to cards, so clone it
+      // to get mutable objects we can update.
+      const d = JSON.parse(JSON.stringify(this._config.data));
       this._data = {
-        members: this._config.data.members || [],
-        chores:  this._config.data.chores  || [],
-        pool:    this._config.data.pool    || [],
+        members: d.members || [],
+        chores:  d.chores  || [],
+        pool:    d.pool    || [],
       };
       console.info(`ChoreTracker v${CARD_VERSION}: loaded data from dashboard config (synced)`);
       this._checkRecurrenceResets();
