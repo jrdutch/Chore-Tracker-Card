@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.3.0';
+const CARD_VERSION = '1.3.1';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -130,11 +130,41 @@ class ChoreTrackerCard extends HTMLElement {
     this._data = { members: [], chores: [], pool: [] };
   }
 
+  // Public save entry point. Writes localStorage immediately, then debounces
+  // the (expensive, whole-dashboard) lovelace write so rapid toggles collapse
+  // into a single save — this also shrinks the window for two devices
+  // overwriting each other.
+  _saveData() {
+    localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+    if (!this._hass) return;
+    clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(() => this._flushSave(), 500);
+  }
+
+  // Serialize lovelace writes: never two in flight, and a save requested
+  // while one is running re-runs after it finishes (with the latest data).
+  async _flushSave() {
+    if (this._saving) {
+      this._savePending = true;
+      return;
+    }
+    this._saving = true;
+    try {
+      await this._writeToLovelace();
+    } finally {
+      this._saving = false;
+      if (this._savePending) {
+        this._savePending = false;
+        this._flushSave();
+      }
+    }
+  }
+
   // Writes data into the card's own lovelace dashboard config entry so it is
   // shared across ALL HA users and devices, not just the current browser.
-  async _saveData() {
-    // Keep localStorage as a local cache / offline fallback
-    localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+  // The config is re-fetched immediately before every save so we patch the
+  // freshest version of the dashboard.
+  async _writeToLovelace() {
     if (!this._hass) return;
     try {
       const callWS = (msg) => {
@@ -182,13 +212,29 @@ class ChoreTrackerCard extends HTMLElement {
       const dataSnapshot = JSON.parse(JSON.stringify(this._data));
       let found = false;
 
+      // Card identity: prefer the stable storage_key (survives title renames
+      // and duplicate titles); fall back to title matching for cards that
+      // haven't been stamped with a key yet.
+      const myKey = this._config.storage_key || null;
+      const matches = (node) => {
+        if (node.type !== 'custom:chore-tracker-card') return false;
+        if (myKey) return node.storage_key === myKey;
+        return !node.storage_key &&
+          (node.title || '') === (this._config.title || 'Chore Tracker');
+      };
+
       const patchCard = (nodes) => {
         if (!Array.isArray(nodes)) return;
         for (const node of nodes) {
           if (!node || typeof node !== 'object') continue;
-          if (node.type === 'custom:chore-tracker-card' &&
-              (node.title || '') === (this._config.title || 'Chore Tracker')) {
+          if (matches(node)) {
             node.data = dataSnapshot;
+            // Stamp a permanent identity on first save so future matching
+            // doesn't depend on the title.
+            if (!node.storage_key) {
+              node.storage_key = myKey || this._uid();
+              this._config = { ...this._config, storage_key: node.storage_key };
+            }
             found = true;
             return;
           }
@@ -221,6 +267,16 @@ class ChoreTrackerCard extends HTMLElement {
 
   _uid() {
     return Math.random().toString(36).slice(2, 10);
+  }
+
+  // Don't lose a debounced save if the card is removed (dashboard switch,
+  // edit mode, etc.) before the timer fires.
+  disconnectedCallback() {
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer);
+      this._saveTimer = null;
+      this._flushSave();
+    }
   }
 
   // Auto-reset chores based on recurrence schedule
