@@ -1,4 +1,4 @@
-// Chore Tracker Card for Home Assistant v1.1.0
+// Chore Tracker Card for Home Assistant v1.2.0
 
 const CHORE_EMOJIS = {
   vacuum: '🧹', vacuuming: '🧹', sweep: '🧹', sweeping: '🧹', mop: '🪣', mopping: '🪣',
@@ -56,34 +56,75 @@ class ChoreTrackerCard extends HTMLElement {
       view: 'main',        // main | admin
     };
     this._initialRenderDone = false;
+    this._dataLoaded = false;
+    this._dataLoading = false;
   }
 
   set hass(hass) {
     this._hass = hass;
-    if (!this._initialRenderDone) {
+    // Trigger data load + initial render once we have both config and hass
+    if (!this._initialRenderDone && this._config) {
       this._initialRenderDone = true;
-      this._render();
+      this._initData();
     }
   }
 
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
-    if (!this._data) this._loadData();
-    this._render();
+    // If hass is already available kick off load immediately, otherwise
+    // the hass setter will do it when it fires.
+    if (this._hass && !this._dataLoaded && !this._dataLoading) {
+      this._initialRenderDone = true;
+      this._initData();
+    } else {
+      // Show a loading skeleton while we wait
+      this._render();
+    }
   }
 
   _storageKey() {
     return `chore_tracker_${(this._config.title || 'default').replace(/\s+/g, '_')}`;
   }
 
-  _loadData() {
+  async _initData() {
+    if (this._dataLoading) return;
+    this._dataLoading = true;
+    this._render(); // show loading state
+    await this._loadData();
+    this._dataLoaded = true;
+    this._dataLoading = false;
+    this._render();
+  }
+
+  async _loadData() {
+    // 1. Try HA server-side user storage (syncs across all devices)
+    if (this._hass) {
+      try {
+        const result = await this._hass.connection.sendMessagePromise({
+          type: 'frontend/get_user_data',
+          key: this._storageKey(),
+        });
+        if (result && result.value && result.value.members) {
+          this._data = result.value;
+          // Cache locally for instant load on revisit
+          localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+          this._checkRecurrenceResets();
+          return;
+        }
+      } catch (e) {
+        console.warn('ChoreTracker: HA user storage unavailable, using localStorage', e);
+      }
+    }
+
+    // 2. Fall back to localStorage (may have existing data from before this update)
     try {
       const raw = localStorage.getItem(this._storageKey());
       if (raw) {
         this._data = JSON.parse(raw);
+        // Migrate existing localStorage data up to HA storage
+        await this._saveData();
       } else {
         this._data = { members: [], chores: [], pool: [] };
-        this._saveData();
       }
     } catch (e) {
       this._data = { members: [], chores: [], pool: [] };
@@ -91,8 +132,22 @@ class ChoreTrackerCard extends HTMLElement {
     this._checkRecurrenceResets();
   }
 
-  _saveData() {
+  async _saveData() {
+    // Write to localStorage immediately for fast local access
     localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+
+    // Persist to HA server so all devices stay in sync
+    if (this._hass) {
+      try {
+        await this._hass.connection.sendMessagePromise({
+          type: 'frontend/set_user_data',
+          key: this._storageKey(),
+          value: this._data,
+        });
+      } catch (e) {
+        console.warn('ChoreTracker: Failed to sync to HA storage', e);
+      }
+    }
   }
 
   _uid() {
@@ -161,7 +216,24 @@ class ChoreTrackerCard extends HTMLElement {
   // ─── RENDER ──────────────────────────────────────────────────────────────
 
   _render() {
-    if (!this._config || !this._data) return;
+    if (!this._config) return;
+
+    // Show loading screen while fetching from HA storage
+    if (!this._data || this._dataLoading) {
+      this.shadowRoot.innerHTML = `
+        <style>${this._styles()}</style>
+        <ha-card>
+          <div class="header">
+            <span class="header-title">${this._config.title || 'Chore Tracker'}</span>
+          </div>
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <div>Loading chore data…</div>
+          </div>
+        </ha-card>
+      `;
+      return;
+    }
 
     // Default active tab to first member or pool
     if (!this._state.activeTab) {
@@ -1123,6 +1195,19 @@ class ChoreTrackerCard extends HTMLElement {
         text-align: center; color: var(--secondary-text-color, #999);
         padding: 20px; font-size: 0.88rem;
       }
+      .loading {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 14px; padding: 40px 20px;
+        color: var(--secondary-text-color, #888); font-size: 0.88rem;
+      }
+      .loading-spinner {
+        width: 32px; height: 32px;
+        border: 3px solid var(--divider-color, #e0e0e0);
+        border-top-color: #0288D1;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
     `;
   }
 
