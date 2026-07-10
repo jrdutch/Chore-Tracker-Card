@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.4.1';
+const CARD_VERSION = '1.5.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -366,6 +366,9 @@ class ChoreTrackerCard extends HTMLElement {
           shouldReset = true;
         } else if (chore.recurrence === 'weekdays' && isWeekday()) {
           shouldReset = true;
+        } else if (chore.recurrence === 'weekly' &&
+                   (chore.recurrenceDays || []).includes(new Date().getDay())) {
+          shouldReset = true;
         }
 
         if (shouldReset) {
@@ -477,7 +480,13 @@ class ChoreTrackerCard extends HTMLElement {
     const allDone = total > 0 && done === total;
     const poolAvailable = this._getPoolChores().length > 0;
 
-    const recurrenceLabel = { none: '', daily: ' · 🔁 Daily', weekdays: ' · 🔁 Weekdays' };
+    const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const recurrenceLabel = (c) => {
+      if (c.recurrence === 'daily') return '🔁 Daily';
+      if (c.recurrence === 'weekdays') return '🔁 Weekdays';
+      if (c.recurrence === 'weekly') return `🔁 ${(c.recurrenceDays || []).map(d => DAY_ABBR[d]).join(', ') || 'Weekly'}`;
+      return '';
+    };
 
     const choreItems = chores.map(c => `
       <div class="chore-item ${c.completed ? 'completed' : ''}">
@@ -488,7 +497,7 @@ class ChoreTrackerCard extends HTMLElement {
         <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
         <div class="chore-body">
           <span class="chore-title">${esc(c.title)}</span>
-          ${c.recurrence && c.recurrence !== 'none' ? `<span class="chore-recur">${recurrenceLabel[c.recurrence] || ''}</span>` : ''}
+          ${c.recurrence && c.recurrence !== 'none' ? `<span class="chore-recur">${recurrenceLabel(c)}</span>` : ''}
         </div>
         <div class="chore-rewards">
           ${c.points ? `<span class="reward-badge points">⭐${c.points}</span>` : ''}
@@ -671,7 +680,16 @@ class ChoreTrackerCard extends HTMLElement {
             <option value="none" ${(!chore.recurrence || chore.recurrence === 'none') ? 'selected' : ''}>One-time / No reset</option>
             <option value="daily" ${chore.recurrence === 'daily' ? 'selected' : ''}>🔁 Daily (resets every day)</option>
             <option value="weekdays" ${chore.recurrence === 'weekdays' ? 'selected' : ''}>🔁 Weekdays (Mon–Fri)</option>
+            <option value="weekly" ${chore.recurrence === 'weekly' ? 'selected' : ''}>🔁 Weekly (pick days)</option>
           </select>
+          <div class="assign-list" id="ec-days-row" style="display:${chore.recurrence === 'weekly' ? 'flex' : 'none'}">
+            ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => `
+              <label class="assign-item">
+                <input type="checkbox" id="ec-day-${i}" ${(chore.recurrenceDays || []).includes(i) ? 'checked' : ''} />
+                ${day}
+              </label>
+            `).join('')}
+          </div>
           <label>Assign To</label>
           <div class="assign-list">
             ${members.length ? members.map(m => `
@@ -696,7 +714,11 @@ class ChoreTrackerCard extends HTMLElement {
         ${chores.map(c => {
           const assignedNames = (c.assignedTo || [])
             .map(id => members.find(m => m.id === id)?.name).filter(Boolean).join(', ');
-          const recurLabel = c.recurrence === 'daily' ? ' · 🔁 Daily' : c.recurrence === 'weekdays' ? ' · 🔁 Weekdays' : '';
+          const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const recurLabel = c.recurrence === 'daily' ? ' · 🔁 Daily'
+            : c.recurrence === 'weekdays' ? ' · 🔁 Weekdays'
+            : c.recurrence === 'weekly' ? ` · 🔁 ${(c.recurrenceDays || []).map(d => DAY_ABBR[d]).join(',') || 'Weekly'}`
+            : '';
           return `
             <div class="admin-item">
               <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
@@ -831,6 +853,13 @@ class ChoreTrackerCard extends HTMLElement {
     });
     const pw = this.shadowRoot.getElementById('admin-password');
     if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') this._adminLogin(); });
+    const recur = this.shadowRoot.getElementById('ec-recurrence');
+    const daysRow = this.shadowRoot.getElementById('ec-days-row');
+    if (recur && daysRow) {
+      recur.addEventListener('change', () => {
+        daysRow.style.display = recur.value === 'weekly' ? 'flex' : 'none';
+      });
+    }
   }
 
   _handleAction(el) {
@@ -962,8 +991,32 @@ class ChoreTrackerCard extends HTMLElement {
         member.dollars = Math.max(0, round2(num(member.dollars) - dlr));
       }
     }
+    // Fire HA bus events so users can automate on chore activity
+    // (celebration lights, notifications, allowance payouts…)
+    if (member && !wasCompleted) {
+      this._fireHAEvent('chore_tracker_chore_completed', {
+        member: member.name,
+        chore: chore.title,
+        points: num(chore.points),
+        dollars: num(chore.dollars),
+      });
+      if (this._allChoresDone(memberId)) {
+        this._fireHAEvent('chore_tracker_all_done', {
+          member: member.name,
+          total_points: num(member.points),
+          total_dollars: num(member.dollars),
+        });
+      }
+    }
+
     this._saveData();
     this._render();
+  }
+
+  _fireHAEvent(eventType, data) {
+    if (!this._hass?.callApi) return;
+    this._hass.callApi('POST', `events/${eventType}`, data)
+      .catch(e => console.warn(`ChoreTracker: could not fire ${eventType} event —`, e.message || e));
   }
 
   _saveChore(editing) {
@@ -973,16 +1026,20 @@ class ChoreTrackerCard extends HTMLElement {
     const points = Math.max(0, Math.round(num(this.shadowRoot.getElementById('ec-points')?.value)));
     const dollars = Math.max(0, round2(this.shadowRoot.getElementById('ec-dollars')?.value));
     const recurrence = this.shadowRoot.getElementById('ec-recurrence')?.value || 'none';
+    const recurrenceDays = [];
+    for (let i = 0; i < 7; i++) {
+      if (this.shadowRoot.getElementById(`ec-day-${i}`)?.checked) recurrenceDays.push(i);
+    }
     const assignedTo = [];
     this.shadowRoot.querySelectorAll('[id^="assign-"]').forEach(cb => {
       if (cb.checked) assignedTo.push(cb.id.replace('assign-', ''));
     });
 
     if (editing === 'new') {
-      this._data.chores.push({ id: this._uid(), title, emoji, points, dollars, recurrence, assignedTo, memberStates: {} });
+      this._data.chores.push({ id: this._uid(), title, emoji, points, dollars, recurrence, recurrenceDays, assignedTo, memberStates: {} });
     } else {
       const chore = (this._data.chores || []).find(c => c.id === editing);
-      if (chore) Object.assign(chore, { title, emoji, points, dollars, recurrence, assignedTo });
+      if (chore) Object.assign(chore, { title, emoji, points, dollars, recurrence, recurrenceDays, assignedTo });
     }
     this._saveData();
     this._state.editingChore = null;
@@ -1421,7 +1478,84 @@ class ChoreTrackerCard extends HTMLElement {
     return { title: 'Family Chores', admin_password: '1234' };
   }
 
+  static getConfigElement() {
+    return document.createElement('chore-tracker-card-editor');
+  }
+
   getCardSize() { return 5; }
+}
+
+// ─── VISUAL CONFIG EDITOR ────────────────────────────────────────────────────
+// Shown in the dashboard UI editor so users never have to touch YAML.
+class ChoreTrackerCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._rendered = false;
+  }
+
+  set hass(hass) { this._hass = hass; }
+
+  setConfig(config) {
+    this._config = { ...config };
+    if (!this._rendered) {
+      this._rendered = true;
+      this._render();
+    }
+  }
+
+  _render() {
+    this.shadowRoot.innerHTML = `
+      <style>
+        .editor { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
+        label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: 500; color: var(--primary-text-color); }
+        input {
+          padding: 10px 12px; border: 1px solid var(--divider-color, #ccc);
+          border-radius: 6px; font-size: 0.95rem;
+          background: var(--card-background-color, #fff); color: var(--primary-text-color, #333);
+        }
+        input:focus { border-color: #0288D1; outline: none; }
+        .hint { font-size: 0.75rem; font-weight: 400; color: var(--secondary-text-color, #888); }
+      </style>
+      <div class="editor">
+        <label>Title
+          <input id="cfg-title" value="${esc(this._config.title || '')}" placeholder="Family Chores" />
+        </label>
+        <label>Admin password
+          <input id="cfg-password" value="${esc(this._config.admin_password || '')}" placeholder="1234" />
+          <span class="hint">Gate for the parent console. Not a security boundary — anyone who can edit the dashboard can see it.</span>
+        </label>
+        <label>Dashboard URL path (advanced)
+          <input id="cfg-urlpath" value="${esc(this._config.lovelace_url_path || '')}" placeholder="auto-detected" />
+          <span class="hint">Leave empty unless sync can't find your dashboard automatically.</span>
+        </label>
+      </div>
+    `;
+    this.shadowRoot.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', () => this._valueChanged());
+    });
+  }
+
+  _valueChanged() {
+    const get = (id) => this.shadowRoot.getElementById(id)?.value?.trim() || '';
+    // Preserve managed keys (data, storage_key) — only touch what we edit
+    const config = { ...this._config };
+    config.title = get('cfg-title') || 'Chore Tracker';
+    config.admin_password = get('cfg-password') || '1234';
+    const urlPath = get('cfg-urlpath');
+    if (urlPath) config.lovelace_url_path = urlPath;
+    else delete config.lovelace_url_path;
+    this._config = config;
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+}
+
+if (!customElements.get('chore-tracker-card-editor')) {
+  customElements.define('chore-tracker-card-editor', ChoreTrackerCardEditor);
 }
 
 if (!customElements.get('chore-tracker-card')) {

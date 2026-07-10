@@ -8,7 +8,9 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 - **Assigned Chores** — Create chores and assign them to one or multiple members
 - **Available Chores pool** — Optional bonus chores members can claim once their own list is done
 - **Points & Allowance** — Assign point values and dollar amounts to each chore; earnings tally automatically
-- **Recurring Chores** — Chores can reset daily or on weekdays (Mon–Fri), at your local midnight
+- **Recurring Chores** — Chores can reset daily, on weekdays (Mon–Fri), or on specific days of the week, at your local midnight
+- **Automation Events** — Fires events on the HA bus when chores are completed, so you can automate lights, notifications, and payouts
+- **Visual Editor** — Configure title and password right in the dashboard UI editor, no YAML needed
 - **Cross-device Sync** — Data is stored in the dashboard config, shared by all HA users and devices; changes made on one device appear live on the others
 - **Admin Console** — Parent console (password-gated) for managing members, chores, and the pool
 - **Safe Deletes** — Destructive buttons require a second confirming tap
@@ -78,6 +80,29 @@ The pool holds optional extra chores that members can **claim** — but only aft
 ## Recurring chores & earnings
 
 Daily and weekday chores automatically uncheck at your local midnight so they're ready to do again. **Earnings are kept** — points and dollars are only removed if a chore is manually unchecked or an admin resets it.
+
+## Automation events
+
+The card fires events on the Home Assistant bus that you can use as automation triggers:
+
+| Event | When | Data |
+| --- | --- | --- |
+| `chore_tracker_chore_completed` | A chore is checked off | `member`, `chore`, `points`, `dollars` |
+| `chore_tracker_all_done` | A member finishes their whole list | `member`, `total_points`, `total_dollars` |
+
+Example — flash a light when a kid finishes all their chores:
+
+```yaml
+trigger:
+  - platform: event
+    event_type: chore_tracker_all_done
+action:
+  - service: light.turn_on
+    target:
+      entity_id: light.living_room
+    data:
+      flash: short
+```
 
 ## Emoji matching
 
