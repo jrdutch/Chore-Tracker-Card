@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.3.1';
+const CARD_VERSION = '1.3.2';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -40,6 +40,17 @@ function todayStr() {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Coerce to a finite number, treating NaN/Infinity/garbage as 0
+function num(v) {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+// Round to cents — avoids floating-point drift from repeated +/- on dollars
+function round2(v) {
+  return Math.round(num(v) * 100) / 100;
 }
 
 // Escape user-supplied text before interpolating into HTML — covers both
@@ -422,7 +433,7 @@ class ChoreTrackerCard extends HTMLElement {
         </div>
         <div class="chore-rewards">
           ${c.points ? `<span class="reward-badge points">⭐${c.points}</span>` : ''}
-          ${c.dollars ? `<span class="reward-badge dollars">💵$${parseFloat(c.dollars).toFixed(2)}</span>` : ''}
+          ${c.dollars ? `<span class="reward-badge dollars">💵$${num(c.dollars).toFixed(2)}</span>` : ''}
         </div>
       </div>
     `).join('');
@@ -435,7 +446,7 @@ class ChoreTrackerCard extends HTMLElement {
             <div class="summary-name">${esc(m.name)}</div>
             <div class="summary-stats">
               <span class="stat-chip">⭐ ${m.points || 0} pts</span>
-              <span class="stat-chip">💵 $${(m.dollars || 0).toFixed(2)}</span>
+              <span class="stat-chip">💵 $${num(m.dollars).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -467,7 +478,7 @@ class ChoreTrackerCard extends HTMLElement {
         </div>
         <div class="chore-rewards">
           ${c.points ? `<span class="reward-badge points">⭐${c.points}</span>` : ''}
-          ${c.dollars ? `<span class="reward-badge dollars">💵$${parseFloat(c.dollars).toFixed(2)}</span>` : ''}
+          ${c.dollars ? `<span class="reward-badge dollars">💵$${num(c.dollars).toFixed(2)}</span>` : ''}
         </div>
         <button class="claim-btn ${eligibles.length === 0 ? 'disabled' : ''}"
           data-action="open-claim" data-choreid="${c.id}"
@@ -632,7 +643,7 @@ class ChoreTrackerCard extends HTMLElement {
               <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
               <div class="admin-item-info">
                 <div class="admin-item-title">${esc(c.title)}</div>
-                <div class="admin-item-meta">${esc(assignedNames || 'Unassigned')} · ⭐${c.points || 0} · 💵$${parseFloat(c.dollars || 0).toFixed(2)}${recurLabel}</div>
+                <div class="admin-item-meta">${esc(assignedNames || 'Unassigned')} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}${recurLabel}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" data-action="edit-chore" data-id="${c.id}">✏️</button>
@@ -663,7 +674,7 @@ class ChoreTrackerCard extends HTMLElement {
           ${!isNew ? `
             <div class="member-totals">
               <span>⭐ ${member.points || 0} pts</span>
-              <span>💵 $${(member.dollars || 0).toFixed(2)}</span>
+              <span>💵 $${num(member.dollars).toFixed(2)}</span>
             </div>
             <button class="secondary-btn" data-action="reset-member-earnings" data-id="${editing}">Reset Earnings to $0</button>
           ` : ''}
@@ -684,7 +695,7 @@ class ChoreTrackerCard extends HTMLElement {
             <span class="tab-avatar small-avatar">${esc(m.avatar || m.name[0].toUpperCase())}</span>
             <div class="admin-item-info">
               <div class="admin-item-title">${esc(m.name)}</div>
-              <div class="admin-item-meta">⭐ ${m.points || 0} pts · 💵 $${(m.dollars || 0).toFixed(2)}</div>
+              <div class="admin-item-meta">⭐ ${m.points || 0} pts · 💵 $${num(m.dollars).toFixed(2)}</div>
             </div>
             <div class="admin-item-actions">
               <button class="icon-btn dark" data-action="edit-member" data-id="${m.id}">✏️</button>
@@ -735,7 +746,7 @@ class ChoreTrackerCard extends HTMLElement {
               <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
               <div class="admin-item-info">
                 <div class="admin-item-title">${esc(c.title)}</div>
-                <div class="admin-item-meta">${claimer ? `Claimed by ${esc(claimer.name)}` : 'Available'} · ⭐${c.points || 0} · 💵$${parseFloat(c.dollars || 0).toFixed(2)}</div>
+                <div class="admin-item-meta">${claimer ? `Claimed by ${esc(claimer.name)}` : 'Available'} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" data-action="edit-pool-chore" data-id="${c.id}">✏️</button>
@@ -854,14 +865,14 @@ class ChoreTrackerCard extends HTMLElement {
 
     const member = (this._data.members || []).find(m => m.id === memberId);
     if (member) {
-      const pts = chore.points || 0;
-      const dlr = parseFloat(chore.dollars || 0);
+      const pts = num(chore.points);
+      const dlr = num(chore.dollars);
       if (!wasCompleted) {
-        member.points = (member.points || 0) + pts;
-        member.dollars = (member.dollars || 0) + dlr;
+        member.points = num(member.points) + pts;
+        member.dollars = round2(num(member.dollars) + dlr);
       } else {
-        member.points = Math.max(0, (member.points || 0) - pts);
-        member.dollars = Math.max(0, (member.dollars || 0) - dlr);
+        member.points = Math.max(0, num(member.points) - pts);
+        member.dollars = Math.max(0, round2(num(member.dollars) - dlr));
       }
     }
     this._saveData();
@@ -872,8 +883,8 @@ class ChoreTrackerCard extends HTMLElement {
     const title = this.shadowRoot.getElementById('ec-title')?.value?.trim();
     if (!title) return;
     const emoji = this.shadowRoot.getElementById('ec-emoji')?.value?.trim() || '';
-    const points = parseInt(this.shadowRoot.getElementById('ec-points')?.value || 0);
-    const dollars = parseFloat(this.shadowRoot.getElementById('ec-dollars')?.value || 0);
+    const points = Math.max(0, Math.round(num(this.shadowRoot.getElementById('ec-points')?.value)));
+    const dollars = Math.max(0, round2(this.shadowRoot.getElementById('ec-dollars')?.value));
     const recurrence = this.shadowRoot.getElementById('ec-recurrence')?.value || 'none';
     const assignedTo = [];
     this.shadowRoot.querySelectorAll('[id^="assign-"]').forEach(cb => {
@@ -906,8 +917,8 @@ class ChoreTrackerCard extends HTMLElement {
       if (state.completed) {
         const member = (this._data.members || []).find(m => m.id === memberId);
         if (member) {
-          member.points = Math.max(0, (member.points || 0) - (chore.points || 0));
-          member.dollars = Math.max(0, (member.dollars || 0) - parseFloat(chore.dollars || 0));
+          member.points = Math.max(0, num(member.points) - num(chore.points));
+          member.dollars = Math.max(0, round2(num(member.dollars) - num(chore.dollars)));
         }
       }
     });
@@ -956,8 +967,8 @@ class ChoreTrackerCard extends HTMLElement {
     const title = this.shadowRoot.getElementById('pc-title')?.value?.trim();
     if (!title) return;
     const emoji = this.shadowRoot.getElementById('pc-emoji')?.value?.trim() || '';
-    const points = parseInt(this.shadowRoot.getElementById('pc-points')?.value || 0);
-    const dollars = parseFloat(this.shadowRoot.getElementById('pc-dollars')?.value || 0);
+    const points = Math.max(0, Math.round(num(this.shadowRoot.getElementById('pc-points')?.value)));
+    const dollars = Math.max(0, round2(this.shadowRoot.getElementById('pc-dollars')?.value));
     if (editing === 'new-pool') {
       if (!this._data.pool) this._data.pool = [];
       this._data.pool.push({ id: this._uid(), title, emoji, points, dollars, claimedBy: null });
