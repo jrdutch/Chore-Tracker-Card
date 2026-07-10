@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.2.3';
+const CARD_VERSION = '1.2.4';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -125,10 +125,39 @@ class ChoreTrackerCard extends HTMLElement {
         throw new Error('No WS API');
       };
 
-      const lovelaceConfig = await callWS({
-        type: 'lovelace/config',
-        url_path: this._config.lovelace_url_path || null,
-      });
+      // Figure out which dashboard this card lives on. Explicit config wins,
+      // otherwise derive it from the page URL (first path segment).
+      // The default dashboard ("lovelace") must be requested as url_path null.
+      let urlPath = this._config.lovelace_url_path;
+      if (!urlPath) {
+        const seg = window.location.pathname.split('/')[1] || '';
+        urlPath = seg;
+      }
+      if (!urlPath || urlPath === 'lovelace') urlPath = null;
+
+      let lovelaceConfig;
+      try {
+        lovelaceConfig = await callWS({ type: 'lovelace/config', url_path: urlPath });
+      } catch (err) {
+        // Fallback: search every storage-mode dashboard for this card
+        const dashboards = await callWS({ type: 'lovelace/dashboards/list' });
+        let found = null;
+        for (const dash of [{ url_path: null }, ...(dashboards || [])]) {
+          if (found) break;
+          if (dash.mode && dash.mode !== 'storage') continue;
+          const p = dash.url_path === 'lovelace' ? null : dash.url_path;
+          if (p === urlPath) continue; // already tried
+          try {
+            const cfg = await callWS({ type: 'lovelace/config', url_path: p });
+            if (JSON.stringify(cfg).includes('custom:chore-tracker-card')) {
+              found = { cfg, p };
+            }
+          } catch (_) { /* dashboard has no stored config — skip */ }
+        }
+        if (!found) throw err;
+        lovelaceConfig = found.cfg;
+        urlPath = found.p;
+      }
 
       // Deep-clone so we don't mutate the live object
       const cfg = JSON.parse(JSON.stringify(lovelaceConfig));
@@ -160,7 +189,7 @@ class ChoreTrackerCard extends HTMLElement {
       if (found) {
         await callWS({
           type: 'lovelace/config/save',
-          url_path: this._config.lovelace_url_path || null,
+          url_path: urlPath,
           config: cfg,
         });
         console.info(`ChoreTracker v${CARD_VERSION}: data saved to dashboard config (synced to all devices)`);
