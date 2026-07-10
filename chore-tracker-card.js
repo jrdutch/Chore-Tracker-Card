@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.2.5';
+const CARD_VERSION = '1.3.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -35,7 +35,22 @@ function getChoreEmoji(title) {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  // Local date, not UTC — recurrence must reset at the family's midnight
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Escape user-supplied text before interpolating into HTML — covers both
+// element content and quoted attribute values.
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function isWeekday() {
@@ -229,14 +244,9 @@ class ChoreTrackerCard extends HTMLElement {
         }
 
         if (shouldReset) {
-          // Deduct earnings if it was marked complete before reset
-          if (state.completed) {
-            const member = (this._data.members || []).find(m => m.id === memberId);
-            if (member) {
-              member.points = Math.max(0, (member.points || 0) - (chore.points || 0));
-              member.dollars = Math.max(0, (member.dollars || 0) - parseFloat(chore.dollars || 0));
-            }
-          }
+          // Recurrence reset unchecks the chore but the member KEEPS the
+          // points/dollars they earned — earnings are only removed when a
+          // chore is manually unchecked or an admin resets it.
           chore.memberStates[memberId] = { completed: false, lastResetDate: today };
           changed = true;
         }
@@ -299,8 +309,8 @@ class ChoreTrackerCard extends HTMLElement {
       const allDone = total > 0 && done === total;
       return `
         <button class="member-tab ${activeTab === m.id ? 'active' : ''}" data-action="set-tab" data-tab="${m.id}">
-          <span class="tab-avatar ${allDone ? 'done' : ''}">${m.avatar || m.name[0].toUpperCase()}</span>
-          <span class="tab-name">${m.name}</span>
+          <span class="tab-avatar ${allDone ? 'done' : ''}">${esc(m.avatar || m.name[0].toUpperCase())}</span>
+          <span class="tab-name">${esc(m.name)}</span>
           ${total > 0 ? `<span class="tab-badge ${allDone ? 'badge-done' : ''}">${done}/${total}</span>` : ''}
         </button>
       `;
@@ -316,7 +326,7 @@ class ChoreTrackerCard extends HTMLElement {
 
     return `
       <div class="header">
-        <span class="header-title">${this._config.title || 'Chore Tracker'}</span>
+        <span class="header-title">${esc(this._config.title || 'Chore Tracker')}</span>
         <button class="icon-btn" data-action="view-admin" title="Admin">⚙️</button>
       </div>
       <div class="tab-bar">
@@ -349,9 +359,9 @@ class ChoreTrackerCard extends HTMLElement {
           data-action="toggle-chore" data-choreid="${c.id}" data-memberid="${m.id}">
           ${c.completed ? '✔' : ''}
         </button>
-        <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
+        <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
         <div class="chore-body">
-          <span class="chore-title">${c.title}</span>
+          <span class="chore-title">${esc(c.title)}</span>
           ${c.recurrence && c.recurrence !== 'none' ? `<span class="chore-recur">${recurrenceLabel[c.recurrence] || ''}</span>` : ''}
         </div>
         <div class="chore-rewards">
@@ -364,9 +374,9 @@ class ChoreTrackerCard extends HTMLElement {
     return `
       <div class="member-summary">
         <div class="summary-left">
-          <div class="summary-avatar">${m.avatar || m.name[0].toUpperCase()}</div>
+          <div class="summary-avatar">${esc(m.avatar || m.name[0].toUpperCase())}</div>
           <div>
-            <div class="summary-name">${m.name}</div>
+            <div class="summary-name">${esc(m.name)}</div>
             <div class="summary-stats">
               <span class="stat-chip">⭐ ${m.points || 0} pts</span>
               <span class="stat-chip">💵 $${(m.dollars || 0).toFixed(2)}</span>
@@ -395,9 +405,9 @@ class ChoreTrackerCard extends HTMLElement {
 
     const items = pool.map(c => `
       <div class="chore-item">
-        <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
+        <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
         <div class="chore-body">
-          <span class="chore-title">${c.title}</span>
+          <span class="chore-title">${esc(c.title)}</span>
         </div>
         <div class="chore-rewards">
           ${c.points ? `<span class="reward-badge points">⭐${c.points}</span>` : ''}
@@ -416,10 +426,10 @@ class ChoreTrackerCard extends HTMLElement {
       const claimer = (this._data.members || []).find(m => m.id === c.claimedBy);
       return `
         <div class="chore-item claimed">
-          <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
+          <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
           <div class="chore-body">
-            <span class="chore-title">${c.title}</span>
-            <span class="chore-recur">Claimed by ${claimer ? claimer.name : 'unknown'}</span>
+            <span class="chore-title">${esc(c.title)}</span>
+            <span class="chore-recur">Claimed by ${esc(claimer ? claimer.name : 'unknown')}</span>
           </div>
         </div>
       `;
@@ -429,7 +439,7 @@ class ChoreTrackerCard extends HTMLElement {
       <div class="pool-header">
         <div class="pool-info">
           ${eligibles.length > 0
-            ? `<span class="pool-eligible">✅ ${eligibles.map(m => m.name).join(', ')} can claim!</span>`
+            ? `<span class="pool-eligible">✅ ${esc(eligibles.map(m => m.name).join(', '))} can claim!</span>`
             : `<span class="pool-none">Complete all assigned chores to claim pool chores.</span>`}
         </div>
       </div>
@@ -454,13 +464,13 @@ class ChoreTrackerCard extends HTMLElement {
     return `
       <div class="modal-overlay" data-action="close-claim">
         <div class="modal" onclick="event.stopPropagation()">
-          <div class="modal-title">Assign "${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}"</div>
+          <div class="modal-title">Assign "${esc(chore.emoji || getChoreEmoji(chore.title))} ${esc(chore.title)}"</div>
           <div class="modal-subtitle">Who is claiming this chore?</div>
           <div class="modal-members">
             ${eligibles.map(m => `
               <button class="modal-member-btn" data-action="confirm-claim" data-choreid="${choreId}" data-memberid="${m.id}">
-                <span class="modal-avatar">${m.avatar || m.name[0].toUpperCase()}</span>
-                <span>${m.name}</span>
+                <span class="modal-avatar">${esc(m.avatar || m.name[0].toUpperCase())}</span>
+                <span>${esc(m.name)}</span>
               </button>
             `).join('')}
           </div>
@@ -541,7 +551,7 @@ class ChoreTrackerCard extends HTMLElement {
             ${members.length ? members.map(m => `
               <label class="assign-item">
                 <input type="checkbox" id="assign-${m.id}" ${(chore.assignedTo || []).includes(m.id) ? 'checked' : ''} />
-                ${m.avatar || m.name[0].toUpperCase()} ${m.name}
+                ${esc(m.avatar || m.name[0].toUpperCase())} ${esc(m.name)}
               </label>
             `).join('') : '<span class="empty-inline">Add members first.</span>'}
           </div>
@@ -563,10 +573,10 @@ class ChoreTrackerCard extends HTMLElement {
           const recurLabel = c.recurrence === 'daily' ? ' · 🔁 Daily' : c.recurrence === 'weekdays' ? ' · 🔁 Weekdays' : '';
           return `
             <div class="admin-item">
-              <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
+              <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
               <div class="admin-item-info">
-                <div class="admin-item-title">${c.title}</div>
-                <div class="admin-item-meta">${assignedNames || 'Unassigned'} · ⭐${c.points || 0} · 💵$${parseFloat(c.dollars || 0).toFixed(2)}${recurLabel}</div>
+                <div class="admin-item-title">${esc(c.title)}</div>
+                <div class="admin-item-meta">${esc(assignedNames || 'Unassigned')} · ⭐${c.points || 0} · 💵$${parseFloat(c.dollars || 0).toFixed(2)}${recurLabel}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" data-action="edit-chore" data-id="${c.id}">✏️</button>
@@ -615,9 +625,9 @@ class ChoreTrackerCard extends HTMLElement {
         <button class="primary-btn full-btn" data-action="new-member">+ Add Member</button>
         ${members.map(m => `
           <div class="admin-item">
-            <span class="tab-avatar small-avatar">${m.avatar || m.name[0].toUpperCase()}</span>
+            <span class="tab-avatar small-avatar">${esc(m.avatar || m.name[0].toUpperCase())}</span>
             <div class="admin-item-info">
-              <div class="admin-item-title">${m.name}</div>
+              <div class="admin-item-title">${esc(m.name)}</div>
               <div class="admin-item-meta">⭐ ${m.points || 0} pts · 💵 $${(m.dollars || 0).toFixed(2)}</div>
             </div>
             <div class="admin-item-actions">
@@ -666,10 +676,10 @@ class ChoreTrackerCard extends HTMLElement {
           const claimer = c.claimedBy ? members.find(m => m.id === c.claimedBy) : null;
           return `
             <div class="admin-item">
-              <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
+              <span class="chore-emoji">${esc(c.emoji || getChoreEmoji(c.title))}</span>
               <div class="admin-item-info">
-                <div class="admin-item-title">${c.title}</div>
-                <div class="admin-item-meta">${claimer ? `Claimed by ${claimer.name}` : 'Available'} · ⭐${c.points || 0} · 💵$${parseFloat(c.dollars || 0).toFixed(2)}</div>
+                <div class="admin-item-title">${esc(c.title)}</div>
+                <div class="admin-item-meta">${claimer ? `Claimed by ${esc(claimer.name)}` : 'Available'} · ⭐${c.points || 0} · 💵$${parseFloat(c.dollars || 0).toFixed(2)}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" data-action="edit-pool-chore" data-id="${c.id}">✏️</button>
@@ -946,7 +956,7 @@ class ChoreTrackerCard extends HTMLElement {
   }
 
   _esc(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return esc(str);
   }
 
   // ─── STYLES ──────────────────────────────────────────────────────────────
