@@ -16,6 +16,7 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 - **Safe Deletes** — Destructive buttons require a second confirming tap
 - **Auto Emoji** — Chores automatically get matching emoji icons based on their name, with manual override
 - **HA Theme Support** — Uses your Home Assistant theme (works with light, dark, and glass themes)
+- **Localized** — English, Spanish, German, French, and Dutch out of the box, following each user's HA language
 
 ## Installation
 
@@ -41,6 +42,7 @@ admin_password: "yourpassword"
 | --- | --- | --- |
 | `title` | `Chore Tracker` | Card title shown in the header |
 | `admin_password` | `1234` | Password for the admin console |
+| `language` | *(HA user language)* | UI language override. Built in: `en`, `es`, `de`, `fr`, `nl`. Follows your HA profile language automatically when unset |
 | `storage_key` | *(auto)* | Stable identity for the card's data. Stamped into the config automatically on first save — don't change it, or the card loses track of its data |
 | `lovelace_url_path` | *(auto)* | Only needed if auto-detection of the dashboard fails; set to the dashboard's URL path |
 | `data` | *(managed)* | The card's data store (members, chores, pool). Written by the card itself — don't edit by hand |

@@ -1,7 +1,8 @@
 // Chore Tracker Card for Home Assistant
 import { LitElement, html, css, nothing } from 'lit';
+import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.6.0';
+const CARD_VERSION = '1.7.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -27,8 +28,6 @@ const CHORE_EMOJIS = {
   sort: '🗂️', sorting: '🗂️', bedroom: '🛏️', bed: '🛏️', room: '🏠',
   mail: '📬', car: '🚗', window: '🪟', windows: '🪟',
 };
-
-const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function getChoreEmoji(title) {
   const lower = String(title || '').toLowerCase();
@@ -60,13 +59,6 @@ function round2(v) {
 function isWeekday() {
   const d = new Date().getDay(); // 0=Sun, 6=Sat
   return d >= 1 && d <= 5;
-}
-
-function recurrenceLabel(c) {
-  if (c.recurrence === 'daily') return '🔁 Daily';
-  if (c.recurrence === 'weekdays') return '🔁 Weekdays';
-  if (c.recurrence === 'weekly') return `🔁 ${(c.recurrenceDays || []).map(d => DAY_ABBR[d]).join(', ') || 'Weekly'}`;
-  return '';
 }
 
 const DEFAULT_CONFIG = {
@@ -105,6 +97,27 @@ class ChoreTrackerCard extends LitElement {
 
   get hass() {
     return this._hass;
+  }
+
+  // Translator for the configured/user language, cached until it changes
+  get _t() {
+    const lang = this._config?.language || this._hass?.locale?.language || this._hass?.language || 'en';
+    if (lang !== this._tLang) {
+      this._tLang = lang;
+      this._localize = makeLocalizer(lang);
+    }
+    return this._localize;
+  }
+
+  _recurLabel(c) {
+    const t = this._t;
+    if (c.recurrence === 'daily') return `🔁 ${t('daily')}`;
+    if (c.recurrence === 'weekdays') return `🔁 ${t('weekdays')}`;
+    if (c.recurrence === 'weekly') {
+      const days = t('days');
+      return `🔁 ${(c.recurrenceDays || []).map(d => days[d]).join(', ') || t('weekly')}`;
+    }
+    return '';
   }
 
   setConfig(config) {
@@ -277,11 +290,11 @@ class ChoreTrackerCard extends LitElement {
         this._setSyncError(null);
         console.info(`ChoreTracker v${CARD_VERSION}: data saved to dashboard config (synced to all devices)`);
       } else {
-        this._setSyncError('Card not found in dashboard config — changes saved on this device only.');
+        this._setSyncError('card_not_found');
         console.warn('ChoreTracker: could not find card in lovelace config — data saved to localStorage only');
       }
     } catch (e) {
-      this._setSyncError('Sync failed — changes saved on this device only.');
+      this._setSyncError('sync_failed');
       console.warn('ChoreTracker: lovelace save failed —', e.message || e);
     }
   }
@@ -416,7 +429,7 @@ class ChoreTrackerCard extends LitElement {
 
     return html`
       <ha-card>
-        ${this._syncError ? html`<div class="sync-banner">⚠️ ${this._syncError}</div>` : nothing}
+        ${this._syncError ? html`<div class="sync-banner">⚠️ ${this._t(this._syncError)}</div>` : nothing}
         ${this._state.view === 'admin' ? this._renderAdmin() : this._renderMain()}
       </ha-card>
     `;
@@ -456,7 +469,7 @@ class ChoreTrackerCard extends LitElement {
         <button class="member-tab ${activeTab === 'pool' ? 'active' : ''}"
           @click=${() => this._setState({ activeTab: 'pool', claimingChore: null })}>
           <span class="tab-avatar pool-icon">📋</span>
-          <span class="tab-name">Available Chores</span>
+          <span class="tab-name">${this._t('available_chores')}</span>
           ${poolCount > 0 ? html`<span class="tab-badge">${poolCount}</span>` : nothing}
         </button>
       </div>
@@ -469,7 +482,7 @@ class ChoreTrackerCard extends LitElement {
 
   _renderMemberPanel(memberId) {
     const m = (this._data.members || []).find(x => x.id === memberId);
-    if (!m) return html`<div class="empty">Member not found.</div>`;
+    if (!m) return html`<div class="empty">${this._t('member_not_found')}</div>`;
 
     const chores = this._getMemberChores(m.id);
     const done = chores.filter(c => c.completed).length;
@@ -485,14 +498,14 @@ class ChoreTrackerCard extends LitElement {
           <div>
             <div class="summary-name">${m.name}</div>
             <div class="summary-stats">
-              <span class="stat-chip">⭐ ${m.points || 0} pts</span>
+              <span class="stat-chip">⭐ ${m.points || 0} ${this._t('pts')}</span>
               <span class="stat-chip">💵 $${num(m.dollars).toFixed(2)}</span>
             </div>
           </div>
         </div>
         <div class="summary-progress">
           <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
-          <div class="progress-label">${done} of ${total} done</div>
+          <div class="progress-label">${this._t('of_done', { done, total })}</div>
         </div>
       </div>
       <div class="chores-list">
@@ -505,18 +518,18 @@ class ChoreTrackerCard extends LitElement {
             <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
             <div class="chore-body">
               <span class="chore-title">${c.title}</span>
-              ${c.recurrence && c.recurrence !== 'none' ? html`<span class="chore-recur">${recurrenceLabel(c)}</span>` : nothing}
+              ${c.recurrence && c.recurrence !== 'none' ? html`<span class="chore-recur">${this._recurLabel(c)}</span>` : nothing}
             </div>
             <div class="chore-rewards">
               ${c.points ? html`<span class="reward-badge points">⭐${c.points}</span>` : nothing}
               ${c.dollars ? html`<span class="reward-badge dollars">💵$${num(c.dollars).toFixed(2)}</span>` : nothing}
             </div>
           </div>
-        `) : html`<div class="empty">No chores assigned yet!</div>`}
+        `) : html`<div class="empty">${this._t('no_chores_assigned')}</div>`}
       </div>
       ${allDone && poolAvailable ? html`
         <div class="claim-banner" @click=${() => this._setState({ activeTab: 'pool' })}>
-          🎉 All done! Claim bonus chores from Available Chores →
+          ${this._t('all_done_banner')}
         </div>
       ` : nothing}
     `;
@@ -531,8 +544,8 @@ class ChoreTrackerCard extends LitElement {
       <div class="pool-header">
         <div class="pool-info">
           ${eligibles.length > 0
-            ? html`<span class="pool-eligible">✅ ${eligibles.map(m => m.name).join(', ')} can claim!</span>`
-            : html`<span class="pool-none">Complete all assigned chores to claim pool chores.</span>`}
+            ? html`<span class="pool-eligible">✅ ${this._t('can_claim', { names: eligibles.map(m => m.name).join(', ') })}</span>`
+            : html`<span class="pool-none">${this._t('complete_all_to_claim')}</span>`}
         </div>
       </div>
       <div class="chores-list">
@@ -548,15 +561,15 @@ class ChoreTrackerCard extends LitElement {
             </div>
             <button class="claim-btn ${eligibles.length === 0 ? 'disabled' : ''}"
               ?disabled=${eligibles.length === 0}
-              title=${eligibles.length === 0 ? 'No members have completed their chores yet' : ''}
+              title=${eligibles.length === 0 ? this._t('no_eligible') : ''}
               @click=${() => this._setState({ claimingChore: c.id })}>
-              Claim
+              ${this._t('claim')}
             </button>
           </div>
-        `) : html`<div class="empty">No chores available in the pool.</div>`}
+        `) : html`<div class="empty">${this._t('no_pool_chores')}</div>`}
       </div>
       ${claimed.length > 0 ? html`
-        <div class="section-label">Already Claimed</div>
+        <div class="section-label">${this._t('already_claimed')}</div>
         <div class="chores-list claimed-list">
           ${claimed.map(c => {
             const claimer = (this._data.members || []).find(m => m.id === c.claimedBy);
@@ -565,7 +578,7 @@ class ChoreTrackerCard extends LitElement {
                 <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
                 <div class="chore-body">
                   <span class="chore-title">${c.title}</span>
-                  <span class="chore-recur">Claimed by ${claimer ? claimer.name : 'unknown'}</span>
+                  <span class="chore-recur">${this._t('claimed_by', { name: claimer ? claimer.name : this._t('unknown') })}</span>
                 </div>
               </div>
             `;
@@ -584,8 +597,8 @@ class ChoreTrackerCard extends LitElement {
     return html`
       <div class="modal-overlay" @click=${() => this._setState({ claimingChore: null })}>
         <div class="modal" @click=${e => e.stopPropagation()}>
-          <div class="modal-title">Assign "${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}"</div>
-          <div class="modal-subtitle">Who is claiming this chore?</div>
+          <div class="modal-title">${this._t('assign')} "${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}"</div>
+          <div class="modal-subtitle">${this._t('who_claiming')}</div>
           <div class="modal-members">
             ${eligibles.map(m => html`
               <button class="modal-member-btn" @click=${() => this._claimChore(choreId, m.id)}>
@@ -594,7 +607,7 @@ class ChoreTrackerCard extends LitElement {
               </button>
             `)}
           </div>
-          <button class="secondary-btn" @click=${() => this._setState({ claimingChore: null })}>Cancel</button>
+          <button class="secondary-btn" @click=${() => this._setState({ claimingChore: null })}>${this._t('cancel')}</button>
         </div>
       </div>
     `;
@@ -607,15 +620,15 @@ class ChoreTrackerCard extends LitElement {
     const tab = this._state.adminTab;
     return html`
       <div class="header">
-        <button class="back-btn" @click=${() => this._setState({ view: 'main', adminUnlocked: false })}>← Back</button>
-        <span class="header-title">Admin Console</span>
+        <button class="back-btn" @click=${() => this._setState({ view: 'main', adminUnlocked: false })}>← ${this._t('back')}</button>
+        <span class="header-title">${this._t('admin_console')}</span>
         <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: 'main', adminUnlocked: false })}>🔒</button>
       </div>
       <div class="tab-bar admin-tabs">
         ${['chores', 'members', 'pool'].map(t => html`
           <button class="member-tab ${tab === t ? 'active' : ''}"
             @click=${() => this._setState({ adminTab: t, editingChore: null, editingMember: null })}>
-            ${t === 'chores' ? 'Chores' : t === 'members' ? 'Members' : 'Available Chores'}
+            ${t === 'chores' ? this._t('chores') : t === 'members' ? this._t('members') : this._t('available_chores')}
           </button>
         `)}
       </div>
@@ -630,16 +643,16 @@ class ChoreTrackerCard extends LitElement {
   _renderAdminLogin() {
     return html`
       <div class="header">
-        <button class="back-btn" @click=${() => this._setState({ view: 'main' })}>← Back</button>
-        <span class="header-title">Admin Console</span>
+        <button class="back-btn" @click=${() => this._setState({ view: 'main' })}>← ${this._t('back')}</button>
+        <span class="header-title">${this._t('admin_console')}</span>
       </div>
       <div class="admin-login">
         <div class="login-icon">🔐</div>
-        <div class="login-title">Enter Admin Password</div>
-        <input class="admin-input" id="admin-password" type="password" placeholder="Password"
+        <div class="login-title">${this._t('enter_admin_password')}</div>
+        <input class="admin-input" id="admin-password" type="password" placeholder=${this._t('password')}
           @keydown=${e => { if (e.key === 'Enter') this._adminLogin(); }} />
         <div class="login-error">${this._loginError}</div>
-        <button class="primary-btn" @click=${() => this._adminLogin()}>Unlock</button>
+        <button class="primary-btn" @click=${() => this._adminLogin()}>${this._t('unlock')}</button>
       </div>
     `;
   }
@@ -666,7 +679,7 @@ class ChoreTrackerCard extends LitElement {
     const armed = this._confirmKey === key;
     return html`
       <button class="danger-btn ${armed ? 'armed' : ''}" @click=${() => this._confirmThen(key, fn)}>
-        ${armed ? 'Confirm?' : label}
+        ${armed ? this._t('confirm') : label}
       </button>
     `;
   }
@@ -693,26 +706,26 @@ class ChoreTrackerCard extends LitElement {
       const recurrence = this._editRecurrence ?? (chore.recurrence || 'none');
       return html`
         <div class="edit-form">
-          <div class="form-title">${isNew ? 'Add Chore' : 'Edit Chore'}</div>
-          <label>Title</label>
-          <input class="form-input" id="ec-title" .value=${chore.title || ''} placeholder="Chore name" />
-          <label>Emoji (optional override)</label>
+          <div class="form-title">${isNew ? this._t('add_chore') : this._t('edit_chore')}</div>
+          <label>${this._t('title')}</label>
+          <input class="form-input" id="ec-title" .value=${chore.title || ''} placeholder=${this._t('chore_name')} />
+          <label>${this._t('emoji_override')}</label>
           <input class="form-input" id="ec-emoji" .value=${chore.emoji || ''} placeholder="e.g. 🧹" />
-          <label>Points</label>
+          <label>${this._t('points')}</label>
           <input class="form-input" id="ec-points" type="number" min="0" .value=${String(chore.points || 0)} />
-          <label>Dollar Value ($)</label>
+          <label>${this._t('dollar_value')}</label>
           <input class="form-input" id="ec-dollars" type="number" min="0" step="0.01" .value=${String(chore.dollars || 0)} />
-          <label>Recurrence</label>
+          <label>${this._t('recurrence')}</label>
           <select class="form-input" id="ec-recurrence" .value=${recurrence}
             @change=${e => { this._editRecurrence = e.target.value; this.requestUpdate(); }}>
-            <option value="none">One-time / No reset</option>
-            <option value="daily">🔁 Daily (resets every day)</option>
-            <option value="weekdays">🔁 Weekdays (Mon–Fri)</option>
-            <option value="weekly">🔁 Weekly (pick days)</option>
+            <option value="none">${this._t('recur_none')}</option>
+            <option value="daily">🔁 ${this._t('recur_daily')}</option>
+            <option value="weekdays">🔁 ${this._t('recur_weekdays')}</option>
+            <option value="weekly">🔁 ${this._t('recur_weekly')}</option>
           </select>
           ${recurrence === 'weekly' ? html`
             <div class="assign-list">
-              ${DAY_ABBR.map((day, i) => html`
+              ${this._t('days').map((day, i) => html`
                 <label class="assign-item">
                   <input type="checkbox" id="ec-day-${i}" .checked=${(chore.recurrenceDays || []).includes(i)} />
                   ${day}
@@ -720,19 +733,19 @@ class ChoreTrackerCard extends LitElement {
               `)}
             </div>
           ` : nothing}
-          <label>Assign To</label>
+          <label>${this._t('assign_to')}</label>
           <div class="assign-list">
             ${members.length ? members.map(m => html`
               <label class="assign-item">
                 <input type="checkbox" id="assign-${m.id}" .checked=${(chore.assignedTo || []).includes(m.id)} />
                 ${m.avatar || m.name[0].toUpperCase()} ${m.name}
               </label>
-            `) : html`<span class="empty-inline">Add members first.</span>`}
+            `) : html`<span class="empty-inline">${this._t('add_members_first')}</span>`}
           </div>
           <div class="form-actions">
-            <button class="primary-btn" @click=${() => this._saveChore(editing)}>Save</button>
-            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
-            ${!isNew ? this._dangerBtn(`del-chore:${editing}`, 'Delete', () => this._deleteChore(editing)) : nothing}
+            <button class="primary-btn" @click=${() => this._saveChore(editing)}>${this._t('save')}</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>${this._t('cancel')}</button>
+            ${!isNew ? this._dangerBtn(`del-chore:${editing}`, this._t('delete'), () => this._deleteChore(editing)) : nothing}
           </div>
         </div>
       `;
@@ -740,26 +753,26 @@ class ChoreTrackerCard extends LitElement {
 
     return html`
       <div class="admin-section">
-        <button class="primary-btn full-btn" @click=${() => this._startEditChore('new')}>+ Add Chore</button>
+        <button class="primary-btn full-btn" @click=${() => this._startEditChore('new')}>+ ${this._t('add_chore')}</button>
         ${chores.map(c => {
           const assignedNames = (c.assignedTo || [])
             .map(id => members.find(m => m.id === id)?.name).filter(Boolean).join(', ');
-          const recurLabel = c.recurrence && c.recurrence !== 'none' ? ` · ${recurrenceLabel(c)}` : '';
+          const recurLabel = c.recurrence && c.recurrence !== 'none' ? ` · ${this._recurLabel(c)}` : '';
           return html`
             <div class="admin-item">
               <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
               <div class="admin-item-info">
                 <div class="admin-item-title">${c.title}</div>
-                <div class="admin-item-meta">${assignedNames || 'Unassigned'} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}${recurLabel}</div>
+                <div class="admin-item-meta">${assignedNames || this._t('unassigned')} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}${recurLabel}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" @click=${() => this._startEditChore(c.id)}>✏️</button>
-                ${this._dangerIconBtn(`reset-chore:${c.id}`, '🔄', 'Reset completion', () => this._resetChore(c.id))}
+                ${this._dangerIconBtn(`reset-chore:${c.id}`, '🔄', this._t('reset_completion'), () => this._resetChore(c.id))}
               </div>
             </div>
           `;
         })}
-        ${chores.length === 0 ? html`<div class="empty">No chores yet.</div>` : nothing}
+        ${chores.length === 0 ? html`<div class="empty">${this._t('no_chores_yet')}</div>` : nothing}
       </div>
     `;
   }
@@ -783,22 +796,22 @@ class ChoreTrackerCard extends LitElement {
       const member = isNew ? { name: '', avatar: '' } : members.find(m => m.id === editing) || {};
       return html`
         <div class="edit-form">
-          <div class="form-title">${isNew ? 'Add Member' : 'Edit Member'}</div>
-          <label>Name</label>
-          <input class="form-input" id="em-name" .value=${member.name || ''} placeholder="Name" />
-          <label>Avatar (emoji or initials)</label>
+          <div class="form-title">${isNew ? this._t('add_member') : this._t('edit_member')}</div>
+          <label>${this._t('name')}</label>
+          <input class="form-input" id="em-name" .value=${member.name || ''} placeholder=${this._t('name')} />
+          <label>${this._t('avatar')}</label>
           <input class="form-input" id="em-avatar" .value=${member.avatar || ''} placeholder="e.g. 👦 or JD" />
           ${!isNew ? html`
             <div class="member-totals">
-              <span>⭐ ${member.points || 0} pts</span>
+              <span>⭐ ${member.points || 0} ${this._t('pts')}</span>
               <span>💵 $${num(member.dollars).toFixed(2)}</span>
             </div>
-            ${this._dangerBtn(`reset-earn:${editing}`, 'Reset Earnings to $0', () => this._resetMemberEarnings(editing))}
+            ${this._dangerBtn(`reset-earn:${editing}`, this._t('reset_earnings'), () => this._resetMemberEarnings(editing))}
           ` : nothing}
           <div class="form-actions">
-            <button class="primary-btn" @click=${() => this._saveMember(editing)}>Save</button>
-            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
-            ${!isNew ? this._dangerBtn(`del-member:${editing}`, 'Delete', () => this._deleteMember(editing)) : nothing}
+            <button class="primary-btn" @click=${() => this._saveMember(editing)}>${this._t('save')}</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>${this._t('cancel')}</button>
+            ${!isNew ? this._dangerBtn(`del-member:${editing}`, this._t('delete'), () => this._deleteMember(editing)) : nothing}
           </div>
         </div>
       `;
@@ -806,21 +819,21 @@ class ChoreTrackerCard extends LitElement {
 
     return html`
       <div class="admin-section">
-        <button class="primary-btn full-btn" @click=${() => this._setState({ editingMember: 'new' })}>+ Add Member</button>
+        <button class="primary-btn full-btn" @click=${() => this._setState({ editingMember: 'new' })}>+ ${this._t('add_member')}</button>
         ${members.map(m => html`
           <div class="admin-item">
             <span class="tab-avatar small-avatar">${m.avatar || m.name[0].toUpperCase()}</span>
             <div class="admin-item-info">
               <div class="admin-item-title">${m.name}</div>
-              <div class="admin-item-meta">⭐ ${m.points || 0} pts · 💵 $${num(m.dollars).toFixed(2)}</div>
+              <div class="admin-item-meta">⭐ ${m.points || 0} ${this._t('pts')} · 💵 $${num(m.dollars).toFixed(2)}</div>
             </div>
             <div class="admin-item-actions">
               <button class="icon-btn dark" @click=${() => this._setState({ editingMember: m.id })}>✏️</button>
-              ${this._dangerIconBtn(`reset-earn:${m.id}`, '💰', 'Reset earnings', () => this._resetMemberEarnings(m.id))}
+              ${this._dangerIconBtn(`reset-earn:${m.id}`, '💰', this._t('reset_earnings'), () => this._resetMemberEarnings(m.id))}
             </div>
           </div>
         `)}
-        ${members.length === 0 ? html`<div class="empty">No members yet.</div>` : nothing}
+        ${members.length === 0 ? html`<div class="empty">${this._t('no_members_yet')}</div>` : nothing}
       </div>
     `;
   }
@@ -835,19 +848,19 @@ class ChoreTrackerCard extends LitElement {
       const chore = isNew ? { title: '', emoji: '', points: 0, dollars: 0 } : pool.find(c => c.id === editing) || {};
       return html`
         <div class="edit-form">
-          <div class="form-title">${isNew ? 'Add Available Chore' : 'Edit Available Chore'}</div>
-          <label>Title</label>
-          <input class="form-input" id="pc-title" .value=${chore.title || ''} placeholder="Chore name" />
-          <label>Emoji (optional)</label>
+          <div class="form-title">${isNew ? this._t('add_available_chore') : this._t('edit_available_chore')}</div>
+          <label>${this._t('title')}</label>
+          <input class="form-input" id="pc-title" .value=${chore.title || ''} placeholder=${this._t('chore_name')} />
+          <label>${this._t('emoji_optional')}</label>
           <input class="form-input" id="pc-emoji" .value=${chore.emoji || ''} placeholder="e.g. 🧹" />
-          <label>Points</label>
+          <label>${this._t('points')}</label>
           <input class="form-input" id="pc-points" type="number" min="0" .value=${String(chore.points || 0)} />
-          <label>Dollar Value ($)</label>
+          <label>${this._t('dollar_value')}</label>
           <input class="form-input" id="pc-dollars" type="number" min="0" step="0.01" .value=${String(chore.dollars || 0)} />
           <div class="form-actions">
-            <button class="primary-btn" @click=${() => this._savePoolChore(editing)}>Save</button>
-            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
-            ${!isNew ? this._dangerBtn(`del-pool:${editing}`, 'Delete', () => this._deletePoolChore(editing)) : nothing}
+            <button class="primary-btn" @click=${() => this._savePoolChore(editing)}>${this._t('save')}</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>${this._t('cancel')}</button>
+            ${!isNew ? this._dangerBtn(`del-pool:${editing}`, this._t('delete'), () => this._deletePoolChore(editing)) : nothing}
           </div>
         </div>
       `;
@@ -855,7 +868,7 @@ class ChoreTrackerCard extends LitElement {
 
     return html`
       <div class="admin-section">
-        <button class="primary-btn full-btn" @click=${() => this._setState({ editingChore: 'new-pool' })}>+ Add Available Chore</button>
+        <button class="primary-btn full-btn" @click=${() => this._setState({ editingChore: 'new-pool' })}>+ ${this._t('add_available_chore')}</button>
         ${pool.map(c => {
           const claimer = c.claimedBy ? members.find(m => m.id === c.claimedBy) : null;
           return html`
@@ -863,17 +876,17 @@ class ChoreTrackerCard extends LitElement {
               <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
               <div class="admin-item-info">
                 <div class="admin-item-title">${c.title}</div>
-                <div class="admin-item-meta">${claimer ? `Claimed by ${claimer.name}` : 'Available'} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}</div>
+                <div class="admin-item-meta">${claimer ? this._t('claimed_by', { name: claimer.name }) : this._t('available')} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" @click=${() => this._setState({ editingChore: c.id })}>✏️</button>
-                ${c.claimedBy ? html`<button class="icon-btn dark" title="Unclaim" @click=${() => this._unclaimPoolChore(c.id)}>↩️</button>` : nothing}
-                ${this._dangerIconBtn(`del-pool:${c.id}`, '🗑️', 'Delete', () => this._deletePoolChore(c.id))}
+                ${c.claimedBy ? html`<button class="icon-btn dark" title=${this._t('unclaim')} @click=${() => this._unclaimPoolChore(c.id)}>↩️</button>` : nothing}
+                ${this._dangerIconBtn(`del-pool:${c.id}`, '🗑️', this._t('delete'), () => this._deletePoolChore(c.id))}
               </div>
             </div>
           `;
         })}
-        ${pool.length === 0 ? html`<div class="empty">No pool chores yet.</div>` : nothing}
+        ${pool.length === 0 ? html`<div class="empty">${this._t('no_pool_yet')}</div>` : nothing}
       </div>
     `;
   }
@@ -886,7 +899,7 @@ class ChoreTrackerCard extends LitElement {
       this._loginError = '';
       this._setState({ adminUnlocked: true });
     } else {
-      this._loginError = 'Incorrect password.';
+      this._loginError = this._t('incorrect_password');
       this.requestUpdate();
     }
   }

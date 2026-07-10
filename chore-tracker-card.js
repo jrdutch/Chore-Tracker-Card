@@ -548,8 +548,351 @@ var o4 = s3.litElementPolyfillSupport;
 o4?.({ LitElement: i4 });
 (s3.litElementVersions ??= []).push("4.2.2");
 
+// src/translations.js
+var TRANSLATIONS = {
+  en: {
+    available_chores: "Available Chores",
+    admin_console: "Admin Console",
+    back: "Back",
+    enter_admin_password: "Enter Admin Password",
+    password: "Password",
+    unlock: "Unlock",
+    incorrect_password: "Incorrect password.",
+    chores: "Chores",
+    members: "Members",
+    add_chore: "Add Chore",
+    edit_chore: "Edit Chore",
+    add_member: "Add Member",
+    edit_member: "Edit Member",
+    add_available_chore: "Add Available Chore",
+    edit_available_chore: "Edit Available Chore",
+    title: "Title",
+    chore_name: "Chore name",
+    emoji_override: "Emoji (optional override)",
+    emoji_optional: "Emoji (optional)",
+    points: "Points",
+    dollar_value: "Dollar Value ($)",
+    recurrence: "Recurrence",
+    recur_none: "One-time / No reset",
+    recur_daily: "Daily (resets every day)",
+    recur_weekdays: "Weekdays (Mon\u2013Fri)",
+    recur_weekly: "Weekly (pick days)",
+    daily: "Daily",
+    weekdays: "Weekdays",
+    weekly: "Weekly",
+    assign_to: "Assign To",
+    add_members_first: "Add members first.",
+    name: "Name",
+    avatar: "Avatar (emoji or initials)",
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    confirm: "Confirm?",
+    reset_earnings: "Reset Earnings to $0",
+    reset_completion: "Reset completion",
+    unclaim: "Unclaim",
+    no_chores_assigned: "No chores assigned yet!",
+    member_not_found: "Member not found.",
+    all_done_banner: "\u{1F389} All done! Claim bonus chores from Available Chores \u2192",
+    can_claim: "{names} can claim!",
+    complete_all_to_claim: "Complete all assigned chores to claim pool chores.",
+    no_pool_chores: "No chores available in the pool.",
+    already_claimed: "Already Claimed",
+    claimed_by: "Claimed by {name}",
+    claim: "Claim",
+    no_eligible: "No members have completed their chores yet",
+    assign: "Assign",
+    who_claiming: "Who is claiming this chore?",
+    unknown: "unknown",
+    no_chores_yet: "No chores yet.",
+    no_members_yet: "No members yet.",
+    no_pool_yet: "No pool chores yet.",
+    unassigned: "Unassigned",
+    available: "Available",
+    of_done: "{done} of {total} done",
+    pts: "pts",
+    sync_failed: "Sync failed \u2014 changes saved on this device only.",
+    card_not_found: "Card not found in dashboard config \u2014 changes saved on this device only.",
+    days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  },
+  es: {
+    available_chores: "Tareas Disponibles",
+    admin_console: "Consola de Administraci\xF3n",
+    back: "Atr\xE1s",
+    enter_admin_password: "Introduce la contrase\xF1a de administrador",
+    password: "Contrase\xF1a",
+    unlock: "Desbloquear",
+    incorrect_password: "Contrase\xF1a incorrecta.",
+    chores: "Tareas",
+    members: "Miembros",
+    add_chore: "A\xF1adir Tarea",
+    edit_chore: "Editar Tarea",
+    add_member: "A\xF1adir Miembro",
+    edit_member: "Editar Miembro",
+    add_available_chore: "A\xF1adir Tarea Disponible",
+    edit_available_chore: "Editar Tarea Disponible",
+    title: "T\xEDtulo",
+    chore_name: "Nombre de la tarea",
+    emoji_override: "Emoji (opcional)",
+    emoji_optional: "Emoji (opcional)",
+    points: "Puntos",
+    dollar_value: "Valor ($)",
+    recurrence: "Repetici\xF3n",
+    recur_none: "Una vez / Sin reinicio",
+    recur_daily: "Diaria (se reinicia cada d\xEDa)",
+    recur_weekdays: "Entre semana (Lun\u2013Vie)",
+    recur_weekly: "Semanal (elegir d\xEDas)",
+    daily: "Diaria",
+    weekdays: "Entre semana",
+    weekly: "Semanal",
+    assign_to: "Asignar a",
+    add_members_first: "A\xF1ade miembros primero.",
+    name: "Nombre",
+    avatar: "Avatar (emoji o iniciales)",
+    save: "Guardar",
+    cancel: "Cancelar",
+    delete: "Eliminar",
+    confirm: "\xBFConfirmar?",
+    reset_earnings: "Restablecer ganancias a $0",
+    reset_completion: "Restablecer estado",
+    unclaim: "Liberar",
+    no_chores_assigned: "\xA1A\xFAn no hay tareas asignadas!",
+    member_not_found: "Miembro no encontrado.",
+    all_done_banner: "\u{1F389} \xA1Todo hecho! Reclama tareas extra en Tareas Disponibles \u2192",
+    can_claim: "\xA1{names} pueden reclamar!",
+    complete_all_to_claim: "Completa todas tus tareas para reclamar tareas extra.",
+    no_pool_chores: "No hay tareas disponibles.",
+    already_claimed: "Ya reclamadas",
+    claimed_by: "Reclamada por {name}",
+    claim: "Reclamar",
+    no_eligible: "Ning\xFAn miembro ha completado sus tareas todav\xEDa",
+    assign: "Asignar",
+    who_claiming: "\xBFQui\xE9n reclama esta tarea?",
+    unknown: "desconocido",
+    no_chores_yet: "A\xFAn no hay tareas.",
+    no_members_yet: "A\xFAn no hay miembros.",
+    no_pool_yet: "A\xFAn no hay tareas extra.",
+    unassigned: "Sin asignar",
+    available: "Disponible",
+    of_done: "{done} de {total} hechas",
+    pts: "pts",
+    sync_failed: "Error de sincronizaci\xF3n \u2014 cambios guardados solo en este dispositivo.",
+    card_not_found: "Tarjeta no encontrada en el panel \u2014 cambios guardados solo en este dispositivo.",
+    days: ["Dom", "Lun", "Mar", "Mi\xE9", "Jue", "Vie", "S\xE1b"]
+  },
+  de: {
+    available_chores: "Verf\xFCgbare Aufgaben",
+    admin_console: "Admin-Konsole",
+    back: "Zur\xFCck",
+    enter_admin_password: "Admin-Passwort eingeben",
+    password: "Passwort",
+    unlock: "Entsperren",
+    incorrect_password: "Falsches Passwort.",
+    chores: "Aufgaben",
+    members: "Mitglieder",
+    add_chore: "Aufgabe hinzuf\xFCgen",
+    edit_chore: "Aufgabe bearbeiten",
+    add_member: "Mitglied hinzuf\xFCgen",
+    edit_member: "Mitglied bearbeiten",
+    add_available_chore: "Verf\xFCgbare Aufgabe hinzuf\xFCgen",
+    edit_available_chore: "Verf\xFCgbare Aufgabe bearbeiten",
+    title: "Titel",
+    chore_name: "Name der Aufgabe",
+    emoji_override: "Emoji (optional)",
+    emoji_optional: "Emoji (optional)",
+    points: "Punkte",
+    dollar_value: "Geldwert ($)",
+    recurrence: "Wiederholung",
+    recur_none: "Einmalig / Kein Zur\xFCcksetzen",
+    recur_daily: "T\xE4glich (wird jeden Tag zur\xFCckgesetzt)",
+    recur_weekdays: "Wochentags (Mo\u2013Fr)",
+    recur_weekly: "W\xF6chentlich (Tage w\xE4hlen)",
+    daily: "T\xE4glich",
+    weekdays: "Wochentags",
+    weekly: "W\xF6chentlich",
+    assign_to: "Zuweisen an",
+    add_members_first: "Zuerst Mitglieder hinzuf\xFCgen.",
+    name: "Name",
+    avatar: "Avatar (Emoji oder Initialen)",
+    save: "Speichern",
+    cancel: "Abbrechen",
+    delete: "L\xF6schen",
+    confirm: "Best\xE4tigen?",
+    reset_earnings: "Verdienst auf $0 zur\xFCcksetzen",
+    reset_completion: "Status zur\xFCcksetzen",
+    unclaim: "Freigeben",
+    no_chores_assigned: "Noch keine Aufgaben zugewiesen!",
+    member_not_found: "Mitglied nicht gefunden.",
+    all_done_banner: "\u{1F389} Alles erledigt! Hol dir Bonus-Aufgaben bei Verf\xFCgbare Aufgaben \u2192",
+    can_claim: "{names} k\xF6nnen Aufgaben \xFCbernehmen!",
+    complete_all_to_claim: "Erledige alle Aufgaben, um Bonus-Aufgaben zu \xFCbernehmen.",
+    no_pool_chores: "Keine Aufgaben verf\xFCgbar.",
+    already_claimed: "Bereits \xFCbernommen",
+    claimed_by: "\xDCbernommen von {name}",
+    claim: "\xDCbernehmen",
+    no_eligible: "Noch kein Mitglied hat alle Aufgaben erledigt",
+    assign: "Zuweisen",
+    who_claiming: "Wer \xFCbernimmt diese Aufgabe?",
+    unknown: "unbekannt",
+    no_chores_yet: "Noch keine Aufgaben.",
+    no_members_yet: "Noch keine Mitglieder.",
+    no_pool_yet: "Noch keine Bonus-Aufgaben.",
+    unassigned: "Nicht zugewiesen",
+    available: "Verf\xFCgbar",
+    of_done: "{done} von {total} erledigt",
+    pts: "Pkt.",
+    sync_failed: "Synchronisierung fehlgeschlagen \u2014 \xC4nderungen nur auf diesem Ger\xE4t gespeichert.",
+    card_not_found: "Karte nicht in der Dashboard-Konfiguration gefunden \u2014 \xC4nderungen nur auf diesem Ger\xE4t gespeichert.",
+    days: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
+  },
+  fr: {
+    available_chores: "T\xE2ches Disponibles",
+    admin_console: "Console d\u2019administration",
+    back: "Retour",
+    enter_admin_password: "Entrez le mot de passe administrateur",
+    password: "Mot de passe",
+    unlock: "D\xE9verrouiller",
+    incorrect_password: "Mot de passe incorrect.",
+    chores: "T\xE2ches",
+    members: "Membres",
+    add_chore: "Ajouter une t\xE2che",
+    edit_chore: "Modifier la t\xE2che",
+    add_member: "Ajouter un membre",
+    edit_member: "Modifier le membre",
+    add_available_chore: "Ajouter une t\xE2che disponible",
+    edit_available_chore: "Modifier la t\xE2che disponible",
+    title: "Titre",
+    chore_name: "Nom de la t\xE2che",
+    emoji_override: "Emoji (facultatif)",
+    emoji_optional: "Emoji (facultatif)",
+    points: "Points",
+    dollar_value: "Valeur ($)",
+    recurrence: "R\xE9currence",
+    recur_none: "Une fois / Pas de r\xE9initialisation",
+    recur_daily: "Quotidienne (r\xE9initialis\xE9e chaque jour)",
+    recur_weekdays: "Jours ouvr\xE9s (Lun\u2013Ven)",
+    recur_weekly: "Hebdomadaire (choisir les jours)",
+    daily: "Quotidienne",
+    weekdays: "Jours ouvr\xE9s",
+    weekly: "Hebdomadaire",
+    assign_to: "Assigner \xE0",
+    add_members_first: "Ajoutez d\u2019abord des membres.",
+    name: "Nom",
+    avatar: "Avatar (emoji ou initiales)",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    delete: "Supprimer",
+    confirm: "Confirmer ?",
+    reset_earnings: "Remettre les gains \xE0 0 $",
+    reset_completion: "R\xE9initialiser l\u2019\xE9tat",
+    unclaim: "Lib\xE9rer",
+    no_chores_assigned: "Aucune t\xE2che assign\xE9e pour l\u2019instant !",
+    member_not_found: "Membre introuvable.",
+    all_done_banner: "\u{1F389} Tout est fait ! R\xE9clamez des t\xE2ches bonus dans T\xE2ches Disponibles \u2192",
+    can_claim: "{names} peuvent r\xE9clamer !",
+    complete_all_to_claim: "Terminez toutes vos t\xE2ches pour r\xE9clamer des t\xE2ches bonus.",
+    no_pool_chores: "Aucune t\xE2che disponible.",
+    already_claimed: "D\xE9j\xE0 r\xE9clam\xE9es",
+    claimed_by: "R\xE9clam\xE9e par {name}",
+    claim: "R\xE9clamer",
+    no_eligible: "Aucun membre n\u2019a encore termin\xE9 ses t\xE2ches",
+    assign: "Assigner",
+    who_claiming: "Qui r\xE9clame cette t\xE2che ?",
+    unknown: "inconnu",
+    no_chores_yet: "Pas encore de t\xE2ches.",
+    no_members_yet: "Pas encore de membres.",
+    no_pool_yet: "Pas encore de t\xE2ches bonus.",
+    unassigned: "Non assign\xE9e",
+    available: "Disponible",
+    of_done: "{done} sur {total} faites",
+    pts: "pts",
+    sync_failed: "\xC9chec de la synchronisation \u2014 modifications enregistr\xE9es uniquement sur cet appareil.",
+    card_not_found: "Carte introuvable dans la configuration du tableau de bord \u2014 modifications enregistr\xE9es uniquement sur cet appareil.",
+    days: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
+  },
+  nl: {
+    available_chores: "Beschikbare Klusjes",
+    admin_console: "Beheerconsole",
+    back: "Terug",
+    enter_admin_password: "Voer beheerderswachtwoord in",
+    password: "Wachtwoord",
+    unlock: "Ontgrendelen",
+    incorrect_password: "Onjuist wachtwoord.",
+    chores: "Klusjes",
+    members: "Leden",
+    add_chore: "Klusje toevoegen",
+    edit_chore: "Klusje bewerken",
+    add_member: "Lid toevoegen",
+    edit_member: "Lid bewerken",
+    add_available_chore: "Beschikbaar klusje toevoegen",
+    edit_available_chore: "Beschikbaar klusje bewerken",
+    title: "Titel",
+    chore_name: "Naam van het klusje",
+    emoji_override: "Emoji (optioneel)",
+    emoji_optional: "Emoji (optioneel)",
+    points: "Punten",
+    dollar_value: "Waarde ($)",
+    recurrence: "Herhaling",
+    recur_none: "Eenmalig / Geen reset",
+    recur_daily: "Dagelijks (reset elke dag)",
+    recur_weekdays: "Doordeweeks (Ma\u2013Vr)",
+    recur_weekly: "Wekelijks (kies dagen)",
+    daily: "Dagelijks",
+    weekdays: "Doordeweeks",
+    weekly: "Wekelijks",
+    assign_to: "Toewijzen aan",
+    add_members_first: "Voeg eerst leden toe.",
+    name: "Naam",
+    avatar: "Avatar (emoji of initialen)",
+    save: "Opslaan",
+    cancel: "Annuleren",
+    delete: "Verwijderen",
+    confirm: "Bevestigen?",
+    reset_earnings: "Verdiensten terugzetten naar $0",
+    reset_completion: "Status resetten",
+    unclaim: "Vrijgeven",
+    no_chores_assigned: "Nog geen klusjes toegewezen!",
+    member_not_found: "Lid niet gevonden.",
+    all_done_banner: "\u{1F389} Alles klaar! Claim bonusklusjes bij Beschikbare Klusjes \u2192",
+    can_claim: "{names} kunnen claimen!",
+    complete_all_to_claim: "Maak al je klusjes af om bonusklusjes te claimen.",
+    no_pool_chores: "Geen klusjes beschikbaar.",
+    already_claimed: "Al geclaimd",
+    claimed_by: "Geclaimd door {name}",
+    claim: "Claimen",
+    no_eligible: "Nog geen lid heeft alle klusjes af",
+    assign: "Toewijzen",
+    who_claiming: "Wie claimt dit klusje?",
+    unknown: "onbekend",
+    no_chores_yet: "Nog geen klusjes.",
+    no_members_yet: "Nog geen leden.",
+    no_pool_yet: "Nog geen bonusklusjes.",
+    unassigned: "Niet toegewezen",
+    available: "Beschikbaar",
+    of_done: "{done} van {total} klaar",
+    pts: "ptn",
+    sync_failed: "Synchronisatie mislukt \u2014 wijzigingen alleen op dit apparaat opgeslagen.",
+    card_not_found: "Kaart niet gevonden in dashboardconfiguratie \u2014 wijzigingen alleen op dit apparaat opgeslagen.",
+    days: ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"]
+  }
+};
+function makeLocalizer(lang) {
+  const base = String(lang || "en").toLowerCase();
+  const dict = TRANSLATIONS[base] || TRANSLATIONS[base.split("-")[0]] || TRANSLATIONS.en;
+  return (key, vars) => {
+    let str = dict[key] ?? TRANSLATIONS.en[key] ?? key;
+    if (Array.isArray(str)) return str;
+    if (vars) {
+      for (const [k2, v2] of Object.entries(vars)) {
+        str = str.replace(`{${k2}}`, v2);
+      }
+    }
+    return str;
+  };
+}
+
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.6.0";
+var CARD_VERSION = "1.7.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -641,7 +984,6 @@ var CHORE_EMOJIS = {
   window: "\u{1FA9F}",
   windows: "\u{1FA9F}"
 };
-var DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function getChoreEmoji(title) {
   const lower = String(title || "").toLowerCase();
   for (const [keyword, emoji] of Object.entries(CHORE_EMOJIS)) {
@@ -665,12 +1007,6 @@ function round2(v2) {
 function isWeekday() {
   const d3 = (/* @__PURE__ */ new Date()).getDay();
   return d3 >= 1 && d3 <= 5;
-}
-function recurrenceLabel(c4) {
-  if (c4.recurrence === "daily") return "\u{1F501} Daily";
-  if (c4.recurrence === "weekdays") return "\u{1F501} Weekdays";
-  if (c4.recurrence === "weekly") return `\u{1F501} ${(c4.recurrenceDays || []).map((d3) => DAY_ABBR[d3]).join(", ") || "Weekly"}`;
-  return "";
 }
 var DEFAULT_CONFIG = {
   title: "Chore Tracker",
@@ -709,6 +1045,25 @@ var ChoreTrackerCard = class extends i4 {
   }
   get hass() {
     return this._hass;
+  }
+  // Translator for the configured/user language, cached until it changes
+  get _t() {
+    const lang = this._config?.language || this._hass?.locale?.language || this._hass?.language || "en";
+    if (lang !== this._tLang) {
+      this._tLang = lang;
+      this._localize = makeLocalizer(lang);
+    }
+    return this._localize;
+  }
+  _recurLabel(c4) {
+    const t3 = this._t;
+    if (c4.recurrence === "daily") return `\u{1F501} ${t3("daily")}`;
+    if (c4.recurrence === "weekdays") return `\u{1F501} ${t3("weekdays")}`;
+    if (c4.recurrence === "weekly") {
+      const days = t3("days");
+      return `\u{1F501} ${(c4.recurrenceDays || []).map((d3) => days[d3]).join(", ") || t3("weekly")}`;
+    }
+    return "";
   }
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
@@ -866,11 +1221,11 @@ var ChoreTrackerCard = class extends i4 {
         this._setSyncError(null);
         console.info(`ChoreTracker v${CARD_VERSION}: data saved to dashboard config (synced to all devices)`);
       } else {
-        this._setSyncError("Card not found in dashboard config \u2014 changes saved on this device only.");
+        this._setSyncError("card_not_found");
         console.warn("ChoreTracker: could not find card in lovelace config \u2014 data saved to localStorage only");
       }
     } catch (e4) {
-      this._setSyncError("Sync failed \u2014 changes saved on this device only.");
+      this._setSyncError("sync_failed");
       console.warn("ChoreTracker: lovelace save failed \u2014", e4.message || e4);
     }
   }
@@ -981,7 +1336,7 @@ var ChoreTrackerCard = class extends i4 {
     }
     return b2`
       <ha-card>
-        ${this._syncError ? b2`<div class="sync-banner">⚠️ ${this._syncError}</div>` : A}
+        ${this._syncError ? b2`<div class="sync-banner">⚠️ ${this._t(this._syncError)}</div>` : A}
         ${this._state.view === "admin" ? this._renderAdmin() : this._renderMain()}
       </ha-card>
     `;
@@ -1018,7 +1373,7 @@ var ChoreTrackerCard = class extends i4 {
         <button class="member-tab ${activeTab === "pool" ? "active" : ""}"
           @click=${() => this._setState({ activeTab: "pool", claimingChore: null })}>
           <span class="tab-avatar pool-icon">📋</span>
-          <span class="tab-name">Available Chores</span>
+          <span class="tab-name">${this._t("available_chores")}</span>
           ${poolCount > 0 ? b2`<span class="tab-badge">${poolCount}</span>` : A}
         </button>
       </div>
@@ -1030,7 +1385,7 @@ var ChoreTrackerCard = class extends i4 {
   }
   _renderMemberPanel(memberId) {
     const m2 = (this._data.members || []).find((x2) => x2.id === memberId);
-    if (!m2) return b2`<div class="empty">Member not found.</div>`;
+    if (!m2) return b2`<div class="empty">${this._t("member_not_found")}</div>`;
     const chores = this._getMemberChores(m2.id);
     const done = chores.filter((c4) => c4.completed).length;
     const total = chores.length;
@@ -1044,14 +1399,14 @@ var ChoreTrackerCard = class extends i4 {
           <div>
             <div class="summary-name">${m2.name}</div>
             <div class="summary-stats">
-              <span class="stat-chip">⭐ ${m2.points || 0} pts</span>
+              <span class="stat-chip">⭐ ${m2.points || 0} ${this._t("pts")}</span>
               <span class="stat-chip">💵 $${num(m2.dollars).toFixed(2)}</span>
             </div>
           </div>
         </div>
         <div class="summary-progress">
           <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
-          <div class="progress-label">${done} of ${total} done</div>
+          <div class="progress-label">${this._t("of_done", { done, total })}</div>
         </div>
       </div>
       <div class="chores-list">
@@ -1064,18 +1419,18 @@ var ChoreTrackerCard = class extends i4 {
             <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
             <div class="chore-body">
               <span class="chore-title">${c4.title}</span>
-              ${c4.recurrence && c4.recurrence !== "none" ? b2`<span class="chore-recur">${recurrenceLabel(c4)}</span>` : A}
+              ${c4.recurrence && c4.recurrence !== "none" ? b2`<span class="chore-recur">${this._recurLabel(c4)}</span>` : A}
             </div>
             <div class="chore-rewards">
               ${c4.points ? b2`<span class="reward-badge points">⭐${c4.points}</span>` : A}
               ${c4.dollars ? b2`<span class="reward-badge dollars">💵$${num(c4.dollars).toFixed(2)}</span>` : A}
             </div>
           </div>
-        `) : b2`<div class="empty">No chores assigned yet!</div>`}
+        `) : b2`<div class="empty">${this._t("no_chores_assigned")}</div>`}
       </div>
       ${allDone && poolAvailable ? b2`
         <div class="claim-banner" @click=${() => this._setState({ activeTab: "pool" })}>
-          🎉 All done! Claim bonus chores from Available Chores →
+          ${this._t("all_done_banner")}
         </div>
       ` : A}
     `;
@@ -1087,7 +1442,7 @@ var ChoreTrackerCard = class extends i4 {
     return b2`
       <div class="pool-header">
         <div class="pool-info">
-          ${eligibles.length > 0 ? b2`<span class="pool-eligible">✅ ${eligibles.map((m2) => m2.name).join(", ")} can claim!</span>` : b2`<span class="pool-none">Complete all assigned chores to claim pool chores.</span>`}
+          ${eligibles.length > 0 ? b2`<span class="pool-eligible">✅ ${this._t("can_claim", { names: eligibles.map((m2) => m2.name).join(", ") })}</span>` : b2`<span class="pool-none">${this._t("complete_all_to_claim")}</span>`}
         </div>
       </div>
       <div class="chores-list">
@@ -1103,15 +1458,15 @@ var ChoreTrackerCard = class extends i4 {
             </div>
             <button class="claim-btn ${eligibles.length === 0 ? "disabled" : ""}"
               ?disabled=${eligibles.length === 0}
-              title=${eligibles.length === 0 ? "No members have completed their chores yet" : ""}
+              title=${eligibles.length === 0 ? this._t("no_eligible") : ""}
               @click=${() => this._setState({ claimingChore: c4.id })}>
-              Claim
+              ${this._t("claim")}
             </button>
           </div>
-        `) : b2`<div class="empty">No chores available in the pool.</div>`}
+        `) : b2`<div class="empty">${this._t("no_pool_chores")}</div>`}
       </div>
       ${claimed.length > 0 ? b2`
-        <div class="section-label">Already Claimed</div>
+        <div class="section-label">${this._t("already_claimed")}</div>
         <div class="chores-list claimed-list">
           ${claimed.map((c4) => {
       const claimer = (this._data.members || []).find((m2) => m2.id === c4.claimedBy);
@@ -1120,7 +1475,7 @@ var ChoreTrackerCard = class extends i4 {
                 <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
                 <div class="chore-body">
                   <span class="chore-title">${c4.title}</span>
-                  <span class="chore-recur">Claimed by ${claimer ? claimer.name : "unknown"}</span>
+                  <span class="chore-recur">${this._t("claimed_by", { name: claimer ? claimer.name : this._t("unknown") })}</span>
                 </div>
               </div>
             `;
@@ -1137,8 +1492,8 @@ var ChoreTrackerCard = class extends i4 {
     return b2`
       <div class="modal-overlay" @click=${() => this._setState({ claimingChore: null })}>
         <div class="modal" @click=${(e4) => e4.stopPropagation()}>
-          <div class="modal-title">Assign "${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}"</div>
-          <div class="modal-subtitle">Who is claiming this chore?</div>
+          <div class="modal-title">${this._t("assign")} "${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}"</div>
+          <div class="modal-subtitle">${this._t("who_claiming")}</div>
           <div class="modal-members">
             ${eligibles.map((m2) => b2`
               <button class="modal-member-btn" @click=${() => this._claimChore(choreId, m2.id)}>
@@ -1147,7 +1502,7 @@ var ChoreTrackerCard = class extends i4 {
               </button>
             `)}
           </div>
-          <button class="secondary-btn" @click=${() => this._setState({ claimingChore: null })}>Cancel</button>
+          <button class="secondary-btn" @click=${() => this._setState({ claimingChore: null })}>${this._t("cancel")}</button>
         </div>
       </div>
     `;
@@ -1158,15 +1513,15 @@ var ChoreTrackerCard = class extends i4 {
     const tab = this._state.adminTab;
     return b2`
       <div class="header">
-        <button class="back-btn" @click=${() => this._setState({ view: "main", adminUnlocked: false })}>← Back</button>
-        <span class="header-title">Admin Console</span>
+        <button class="back-btn" @click=${() => this._setState({ view: "main", adminUnlocked: false })}>← ${this._t("back")}</button>
+        <span class="header-title">${this._t("admin_console")}</span>
         <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: "main", adminUnlocked: false })}>🔒</button>
       </div>
       <div class="tab-bar admin-tabs">
         ${["chores", "members", "pool"].map((t3) => b2`
           <button class="member-tab ${tab === t3 ? "active" : ""}"
             @click=${() => this._setState({ adminTab: t3, editingChore: null, editingMember: null })}>
-            ${t3 === "chores" ? "Chores" : t3 === "members" ? "Members" : "Available Chores"}
+            ${t3 === "chores" ? this._t("chores") : t3 === "members" ? this._t("members") : this._t("available_chores")}
           </button>
         `)}
       </div>
@@ -1180,18 +1535,18 @@ var ChoreTrackerCard = class extends i4 {
   _renderAdminLogin() {
     return b2`
       <div class="header">
-        <button class="back-btn" @click=${() => this._setState({ view: "main" })}>← Back</button>
-        <span class="header-title">Admin Console</span>
+        <button class="back-btn" @click=${() => this._setState({ view: "main" })}>← ${this._t("back")}</button>
+        <span class="header-title">${this._t("admin_console")}</span>
       </div>
       <div class="admin-login">
         <div class="login-icon">🔐</div>
-        <div class="login-title">Enter Admin Password</div>
-        <input class="admin-input" id="admin-password" type="password" placeholder="Password"
+        <div class="login-title">${this._t("enter_admin_password")}</div>
+        <input class="admin-input" id="admin-password" type="password" placeholder=${this._t("password")}
           @keydown=${(e4) => {
       if (e4.key === "Enter") this._adminLogin();
     }} />
         <div class="login-error">${this._loginError}</div>
-        <button class="primary-btn" @click=${() => this._adminLogin()}>Unlock</button>
+        <button class="primary-btn" @click=${() => this._adminLogin()}>${this._t("unlock")}</button>
       </div>
     `;
   }
@@ -1216,7 +1571,7 @@ var ChoreTrackerCard = class extends i4 {
     const armed = this._confirmKey === key;
     return b2`
       <button class="danger-btn ${armed ? "armed" : ""}" @click=${() => this._confirmThen(key, fn)}>
-        ${armed ? "Confirm?" : label}
+        ${armed ? this._t("confirm") : label}
       </button>
     `;
   }
@@ -1239,29 +1594,29 @@ var ChoreTrackerCard = class extends i4 {
       const recurrence = this._editRecurrence ?? (chore.recurrence || "none");
       return b2`
         <div class="edit-form">
-          <div class="form-title">${isNew ? "Add Chore" : "Edit Chore"}</div>
-          <label>Title</label>
-          <input class="form-input" id="ec-title" .value=${chore.title || ""} placeholder="Chore name" />
-          <label>Emoji (optional override)</label>
+          <div class="form-title">${isNew ? this._t("add_chore") : this._t("edit_chore")}</div>
+          <label>${this._t("title")}</label>
+          <input class="form-input" id="ec-title" .value=${chore.title || ""} placeholder=${this._t("chore_name")} />
+          <label>${this._t("emoji_override")}</label>
           <input class="form-input" id="ec-emoji" .value=${chore.emoji || ""} placeholder="e.g. 🧹" />
-          <label>Points</label>
+          <label>${this._t("points")}</label>
           <input class="form-input" id="ec-points" type="number" min="0" .value=${String(chore.points || 0)} />
-          <label>Dollar Value ($)</label>
+          <label>${this._t("dollar_value")}</label>
           <input class="form-input" id="ec-dollars" type="number" min="0" step="0.01" .value=${String(chore.dollars || 0)} />
-          <label>Recurrence</label>
+          <label>${this._t("recurrence")}</label>
           <select class="form-input" id="ec-recurrence" .value=${recurrence}
             @change=${(e4) => {
         this._editRecurrence = e4.target.value;
         this.requestUpdate();
       }}>
-            <option value="none">One-time / No reset</option>
-            <option value="daily">🔁 Daily (resets every day)</option>
-            <option value="weekdays">🔁 Weekdays (Mon–Fri)</option>
-            <option value="weekly">🔁 Weekly (pick days)</option>
+            <option value="none">${this._t("recur_none")}</option>
+            <option value="daily">🔁 ${this._t("recur_daily")}</option>
+            <option value="weekdays">🔁 ${this._t("recur_weekdays")}</option>
+            <option value="weekly">🔁 ${this._t("recur_weekly")}</option>
           </select>
           ${recurrence === "weekly" ? b2`
             <div class="assign-list">
-              ${DAY_ABBR.map((day, i5) => b2`
+              ${this._t("days").map((day, i5) => b2`
                 <label class="assign-item">
                   <input type="checkbox" id="ec-day-${i5}" .checked=${(chore.recurrenceDays || []).includes(i5)} />
                   ${day}
@@ -1269,44 +1624,44 @@ var ChoreTrackerCard = class extends i4 {
               `)}
             </div>
           ` : A}
-          <label>Assign To</label>
+          <label>${this._t("assign_to")}</label>
           <div class="assign-list">
             ${members.length ? members.map((m2) => b2`
               <label class="assign-item">
                 <input type="checkbox" id="assign-${m2.id}" .checked=${(chore.assignedTo || []).includes(m2.id)} />
                 ${m2.avatar || m2.name[0].toUpperCase()} ${m2.name}
               </label>
-            `) : b2`<span class="empty-inline">Add members first.</span>`}
+            `) : b2`<span class="empty-inline">${this._t("add_members_first")}</span>`}
           </div>
           <div class="form-actions">
-            <button class="primary-btn" @click=${() => this._saveChore(editing)}>Save</button>
-            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
-            ${!isNew ? this._dangerBtn(`del-chore:${editing}`, "Delete", () => this._deleteChore(editing)) : A}
+            <button class="primary-btn" @click=${() => this._saveChore(editing)}>${this._t("save")}</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>${this._t("cancel")}</button>
+            ${!isNew ? this._dangerBtn(`del-chore:${editing}`, this._t("delete"), () => this._deleteChore(editing)) : A}
           </div>
         </div>
       `;
     }
     return b2`
       <div class="admin-section">
-        <button class="primary-btn full-btn" @click=${() => this._startEditChore("new")}>+ Add Chore</button>
+        <button class="primary-btn full-btn" @click=${() => this._startEditChore("new")}>+ ${this._t("add_chore")}</button>
         ${chores.map((c4) => {
       const assignedNames = (c4.assignedTo || []).map((id) => members.find((m2) => m2.id === id)?.name).filter(Boolean).join(", ");
-      const recurLabel = c4.recurrence && c4.recurrence !== "none" ? ` \xB7 ${recurrenceLabel(c4)}` : "";
+      const recurLabel = c4.recurrence && c4.recurrence !== "none" ? ` \xB7 ${this._recurLabel(c4)}` : "";
       return b2`
             <div class="admin-item">
               <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
               <div class="admin-item-info">
                 <div class="admin-item-title">${c4.title}</div>
-                <div class="admin-item-meta">${assignedNames || "Unassigned"} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}${recurLabel}</div>
+                <div class="admin-item-meta">${assignedNames || this._t("unassigned")} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}${recurLabel}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" @click=${() => this._startEditChore(c4.id)}>✏️</button>
-                ${this._dangerIconBtn(`reset-chore:${c4.id}`, "\u{1F504}", "Reset completion", () => this._resetChore(c4.id))}
+                ${this._dangerIconBtn(`reset-chore:${c4.id}`, "\u{1F504}", this._t("reset_completion"), () => this._resetChore(c4.id))}
               </div>
             </div>
           `;
     })}
-        ${chores.length === 0 ? b2`<div class="empty">No chores yet.</div>` : A}
+        ${chores.length === 0 ? b2`<div class="empty">${this._t("no_chores_yet")}</div>` : A}
       </div>
     `;
   }
@@ -1326,43 +1681,43 @@ var ChoreTrackerCard = class extends i4 {
       const member = isNew ? { name: "", avatar: "" } : members.find((m2) => m2.id === editing) || {};
       return b2`
         <div class="edit-form">
-          <div class="form-title">${isNew ? "Add Member" : "Edit Member"}</div>
-          <label>Name</label>
-          <input class="form-input" id="em-name" .value=${member.name || ""} placeholder="Name" />
-          <label>Avatar (emoji or initials)</label>
+          <div class="form-title">${isNew ? this._t("add_member") : this._t("edit_member")}</div>
+          <label>${this._t("name")}</label>
+          <input class="form-input" id="em-name" .value=${member.name || ""} placeholder=${this._t("name")} />
+          <label>${this._t("avatar")}</label>
           <input class="form-input" id="em-avatar" .value=${member.avatar || ""} placeholder="e.g. 👦 or JD" />
           ${!isNew ? b2`
             <div class="member-totals">
-              <span>⭐ ${member.points || 0} pts</span>
+              <span>⭐ ${member.points || 0} ${this._t("pts")}</span>
               <span>💵 $${num(member.dollars).toFixed(2)}</span>
             </div>
-            ${this._dangerBtn(`reset-earn:${editing}`, "Reset Earnings to $0", () => this._resetMemberEarnings(editing))}
+            ${this._dangerBtn(`reset-earn:${editing}`, this._t("reset_earnings"), () => this._resetMemberEarnings(editing))}
           ` : A}
           <div class="form-actions">
-            <button class="primary-btn" @click=${() => this._saveMember(editing)}>Save</button>
-            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
-            ${!isNew ? this._dangerBtn(`del-member:${editing}`, "Delete", () => this._deleteMember(editing)) : A}
+            <button class="primary-btn" @click=${() => this._saveMember(editing)}>${this._t("save")}</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>${this._t("cancel")}</button>
+            ${!isNew ? this._dangerBtn(`del-member:${editing}`, this._t("delete"), () => this._deleteMember(editing)) : A}
           </div>
         </div>
       `;
     }
     return b2`
       <div class="admin-section">
-        <button class="primary-btn full-btn" @click=${() => this._setState({ editingMember: "new" })}>+ Add Member</button>
+        <button class="primary-btn full-btn" @click=${() => this._setState({ editingMember: "new" })}>+ ${this._t("add_member")}</button>
         ${members.map((m2) => b2`
           <div class="admin-item">
             <span class="tab-avatar small-avatar">${m2.avatar || m2.name[0].toUpperCase()}</span>
             <div class="admin-item-info">
               <div class="admin-item-title">${m2.name}</div>
-              <div class="admin-item-meta">⭐ ${m2.points || 0} pts · 💵 $${num(m2.dollars).toFixed(2)}</div>
+              <div class="admin-item-meta">⭐ ${m2.points || 0} ${this._t("pts")} · 💵 $${num(m2.dollars).toFixed(2)}</div>
             </div>
             <div class="admin-item-actions">
               <button class="icon-btn dark" @click=${() => this._setState({ editingMember: m2.id })}>✏️</button>
-              ${this._dangerIconBtn(`reset-earn:${m2.id}`, "\u{1F4B0}", "Reset earnings", () => this._resetMemberEarnings(m2.id))}
+              ${this._dangerIconBtn(`reset-earn:${m2.id}`, "\u{1F4B0}", this._t("reset_earnings"), () => this._resetMemberEarnings(m2.id))}
             </div>
           </div>
         `)}
-        ${members.length === 0 ? b2`<div class="empty">No members yet.</div>` : A}
+        ${members.length === 0 ? b2`<div class="empty">${this._t("no_members_yet")}</div>` : A}
       </div>
     `;
   }
@@ -1375,26 +1730,26 @@ var ChoreTrackerCard = class extends i4 {
       const chore = isNew ? { title: "", emoji: "", points: 0, dollars: 0 } : pool.find((c4) => c4.id === editing) || {};
       return b2`
         <div class="edit-form">
-          <div class="form-title">${isNew ? "Add Available Chore" : "Edit Available Chore"}</div>
-          <label>Title</label>
-          <input class="form-input" id="pc-title" .value=${chore.title || ""} placeholder="Chore name" />
-          <label>Emoji (optional)</label>
+          <div class="form-title">${isNew ? this._t("add_available_chore") : this._t("edit_available_chore")}</div>
+          <label>${this._t("title")}</label>
+          <input class="form-input" id="pc-title" .value=${chore.title || ""} placeholder=${this._t("chore_name")} />
+          <label>${this._t("emoji_optional")}</label>
           <input class="form-input" id="pc-emoji" .value=${chore.emoji || ""} placeholder="e.g. 🧹" />
-          <label>Points</label>
+          <label>${this._t("points")}</label>
           <input class="form-input" id="pc-points" type="number" min="0" .value=${String(chore.points || 0)} />
-          <label>Dollar Value ($)</label>
+          <label>${this._t("dollar_value")}</label>
           <input class="form-input" id="pc-dollars" type="number" min="0" step="0.01" .value=${String(chore.dollars || 0)} />
           <div class="form-actions">
-            <button class="primary-btn" @click=${() => this._savePoolChore(editing)}>Save</button>
-            <button class="secondary-btn" @click=${() => this._cancelEdit()}>Cancel</button>
-            ${!isNew ? this._dangerBtn(`del-pool:${editing}`, "Delete", () => this._deletePoolChore(editing)) : A}
+            <button class="primary-btn" @click=${() => this._savePoolChore(editing)}>${this._t("save")}</button>
+            <button class="secondary-btn" @click=${() => this._cancelEdit()}>${this._t("cancel")}</button>
+            ${!isNew ? this._dangerBtn(`del-pool:${editing}`, this._t("delete"), () => this._deletePoolChore(editing)) : A}
           </div>
         </div>
       `;
     }
     return b2`
       <div class="admin-section">
-        <button class="primary-btn full-btn" @click=${() => this._setState({ editingChore: "new-pool" })}>+ Add Available Chore</button>
+        <button class="primary-btn full-btn" @click=${() => this._setState({ editingChore: "new-pool" })}>+ ${this._t("add_available_chore")}</button>
         ${pool.map((c4) => {
       const claimer = c4.claimedBy ? members.find((m2) => m2.id === c4.claimedBy) : null;
       return b2`
@@ -1402,17 +1757,17 @@ var ChoreTrackerCard = class extends i4 {
               <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
               <div class="admin-item-info">
                 <div class="admin-item-title">${c4.title}</div>
-                <div class="admin-item-meta">${claimer ? `Claimed by ${claimer.name}` : "Available"} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}</div>
+                <div class="admin-item-meta">${claimer ? this._t("claimed_by", { name: claimer.name }) : this._t("available")} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}</div>
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" @click=${() => this._setState({ editingChore: c4.id })}>✏️</button>
-                ${c4.claimedBy ? b2`<button class="icon-btn dark" title="Unclaim" @click=${() => this._unclaimPoolChore(c4.id)}>↩️</button>` : A}
-                ${this._dangerIconBtn(`del-pool:${c4.id}`, "\u{1F5D1}\uFE0F", "Delete", () => this._deletePoolChore(c4.id))}
+                ${c4.claimedBy ? b2`<button class="icon-btn dark" title=${this._t("unclaim")} @click=${() => this._unclaimPoolChore(c4.id)}>↩️</button>` : A}
+                ${this._dangerIconBtn(`del-pool:${c4.id}`, "\u{1F5D1}\uFE0F", this._t("delete"), () => this._deletePoolChore(c4.id))}
               </div>
             </div>
           `;
     })}
-        ${pool.length === 0 ? b2`<div class="empty">No pool chores yet.</div>` : A}
+        ${pool.length === 0 ? b2`<div class="empty">${this._t("no_pool_yet")}</div>` : A}
       </div>
     `;
   }
@@ -1423,7 +1778,7 @@ var ChoreTrackerCard = class extends i4 {
       this._loginError = "";
       this._setState({ adminUnlocked: true });
     } else {
-      this._loginError = "Incorrect password.";
+      this._loginError = this._t("incorrect_password");
       this.requestUpdate();
     }
   }
