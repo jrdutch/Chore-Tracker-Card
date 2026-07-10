@@ -1,4 +1,10 @@
-// Chore Tracker Card for Home Assistant v1.2.2
+// Chore Tracker Card for Home Assistant
+const CARD_VERSION = '1.2.3';
+console.info(
+  `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
+  'color: white; background: #003366; font-weight: 700;',
+  'color: #003366; background: #4FC3F7; font-weight: 700;'
+);
 
 const CHORE_EMOJIS = {
   vacuum: '🧹', vacuuming: '🧹', sweep: '🧹', sweeping: '🧹', mop: '🪣', mopping: '🪣',
@@ -88,6 +94,7 @@ class ChoreTrackerCard extends HTMLElement {
         chores:  this._config.data.chores  || [],
         pool:    this._config.data.pool    || [],
       };
+      console.info(`ChoreTracker v${CARD_VERSION}: loaded data from dashboard config (synced)`);
       this._checkRecurrenceResets();
       return;
     }
@@ -96,6 +103,7 @@ class ChoreTrackerCard extends HTMLElement {
       const raw = localStorage.getItem(this._storageKey());
       if (raw) {
         this._data = JSON.parse(raw);
+        console.info(`ChoreTracker v${CARD_VERSION}: migrating localStorage data to dashboard config…`);
         this._checkRecurrenceResets();
         this._saveData(); // push to lovelace config so all devices see it
         return;
@@ -155,6 +163,7 @@ class ChoreTrackerCard extends HTMLElement {
           url_path: this._config.lovelace_url_path || null,
           config: cfg,
         });
+        console.info(`ChoreTracker v${CARD_VERSION}: data saved to dashboard config (synced to all devices)`);
       } else {
         console.warn('ChoreTracker: could not find card in lovelace config — data saved to localStorage only');
       }
