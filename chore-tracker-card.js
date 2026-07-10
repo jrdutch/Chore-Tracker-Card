@@ -1,5 +1,5 @@
 // Chore Tracker Card for Home Assistant
-const CARD_VERSION = '1.3.2';
+const CARD_VERSION = '1.4.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -92,6 +92,7 @@ class ChoreTrackerCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._subscribeToUpdates();
     if (!this._initialRenderDone && this._config) {
       this._initialRenderDone = true;
       this._loadData();
@@ -171,6 +172,73 @@ class ChoreTrackerCard extends HTMLElement {
     }
   }
 
+  _callWS(msg) {
+    if (typeof this._hass.callWS === 'function') return this._hass.callWS(msg);
+    if (this._hass.connection?.sendMessagePromise) return this._hass.connection.sendMessagePromise(msg);
+    throw new Error('No WS API');
+  }
+
+  // Fetch the config of the dashboard this card lives on. Explicit config
+  // wins, otherwise derive it from the page URL (first path segment).
+  // The default dashboard ("lovelace") must be requested as url_path null.
+  async _fetchDashboardConfig() {
+    let urlPath = this._config.lovelace_url_path;
+    if (!urlPath) {
+      const seg = window.location.pathname.split('/')[1] || '';
+      urlPath = seg;
+    }
+    if (!urlPath || urlPath === 'lovelace') urlPath = null;
+
+    try {
+      const cfg = await this._callWS({ type: 'lovelace/config', url_path: urlPath });
+      return { cfg, urlPath };
+    } catch (err) {
+      // Fallback: search every storage-mode dashboard for this card
+      const dashboards = await this._callWS({ type: 'lovelace/dashboards/list' });
+      for (const dash of [{ url_path: null }, ...(dashboards || [])]) {
+        if (dash.mode && dash.mode !== 'storage') continue;
+        const p = dash.url_path === 'lovelace' ? null : dash.url_path;
+        if (p === urlPath) continue; // already tried
+        try {
+          const cfg = await this._callWS({ type: 'lovelace/config', url_path: p });
+          if (JSON.stringify(cfg).includes('custom:chore-tracker-card')) {
+            return { cfg, urlPath: p };
+          }
+        } catch (_) { /* dashboard has no stored config — skip */ }
+      }
+      throw err;
+    }
+  }
+
+  // Find this card's node inside a dashboard config tree, using the same
+  // identity rules as saving: storage_key first, then legacy title match.
+  _findCardNode(cfg) {
+    const myKey = this._config.storage_key || null;
+    const matches = (node) => {
+      if (node.type !== 'custom:chore-tracker-card') return false;
+      if (myKey) return node.storage_key === myKey;
+      return !node.storage_key &&
+        (node.title || '') === (this._config.title || 'Chore Tracker');
+    };
+    let result = null;
+    const walk = (nodes) => {
+      if (!Array.isArray(nodes) || result) return;
+      for (const node of nodes) {
+        if (!node || typeof node !== 'object') continue;
+        if (matches(node)) { result = node; return; }
+        walk(node.cards);
+        if (node.card) walk([node.card]);
+      }
+    };
+    for (const view of (cfg.views || [])) {
+      walk(view.cards);
+      for (const section of (view.sections || [])) {
+        walk(section.cards);
+      }
+    }
+    return result;
+  }
+
   // Writes data into the card's own lovelace dashboard config entry so it is
   // shared across ALL HA users and devices, not just the current browser.
   // The config is re-fetched immediately before every save so we patch the
@@ -178,102 +246,92 @@ class ChoreTrackerCard extends HTMLElement {
   async _writeToLovelace() {
     if (!this._hass) return;
     try {
-      const callWS = (msg) => {
-        if (typeof this._hass.callWS === 'function') return this._hass.callWS(msg);
-        if (this._hass.connection?.sendMessagePromise) return this._hass.connection.sendMessagePromise(msg);
-        throw new Error('No WS API');
-      };
-
-      // Figure out which dashboard this card lives on. Explicit config wins,
-      // otherwise derive it from the page URL (first path segment).
-      // The default dashboard ("lovelace") must be requested as url_path null.
-      let urlPath = this._config.lovelace_url_path;
-      if (!urlPath) {
-        const seg = window.location.pathname.split('/')[1] || '';
-        urlPath = seg;
-      }
-      if (!urlPath || urlPath === 'lovelace') urlPath = null;
-
-      let lovelaceConfig;
-      try {
-        lovelaceConfig = await callWS({ type: 'lovelace/config', url_path: urlPath });
-      } catch (err) {
-        // Fallback: search every storage-mode dashboard for this card
-        const dashboards = await callWS({ type: 'lovelace/dashboards/list' });
-        let found = null;
-        for (const dash of [{ url_path: null }, ...(dashboards || [])]) {
-          if (found) break;
-          if (dash.mode && dash.mode !== 'storage') continue;
-          const p = dash.url_path === 'lovelace' ? null : dash.url_path;
-          if (p === urlPath) continue; // already tried
-          try {
-            const cfg = await callWS({ type: 'lovelace/config', url_path: p });
-            if (JSON.stringify(cfg).includes('custom:chore-tracker-card')) {
-              found = { cfg, p };
-            }
-          } catch (_) { /* dashboard has no stored config — skip */ }
-        }
-        if (!found) throw err;
-        lovelaceConfig = found.cfg;
-        urlPath = found.p;
-      }
+      const fetched = await this._fetchDashboardConfig();
+      const lovelaceConfig = fetched.cfg;
+      const urlPath = fetched.urlPath;
 
       // Deep-clone so we don't mutate the live object
       const cfg = JSON.parse(JSON.stringify(lovelaceConfig));
-      const dataSnapshot = JSON.parse(JSON.stringify(this._data));
-      let found = false;
+      const node = this._findCardNode(cfg);
 
-      // Card identity: prefer the stable storage_key (survives title renames
-      // and duplicate titles); fall back to title matching for cards that
-      // haven't been stamped with a key yet.
-      const myKey = this._config.storage_key || null;
-      const matches = (node) => {
-        if (node.type !== 'custom:chore-tracker-card') return false;
-        if (myKey) return node.storage_key === myKey;
-        return !node.storage_key &&
-          (node.title || '') === (this._config.title || 'Chore Tracker');
-      };
-
-      const patchCard = (nodes) => {
-        if (!Array.isArray(nodes)) return;
-        for (const node of nodes) {
-          if (!node || typeof node !== 'object') continue;
-          if (matches(node)) {
-            node.data = dataSnapshot;
-            // Stamp a permanent identity on first save so future matching
-            // doesn't depend on the title.
-            if (!node.storage_key) {
-              node.storage_key = myKey || this._uid();
-              this._config = { ...this._config, storage_key: node.storage_key };
-            }
-            found = true;
-            return;
-          }
-          patchCard(node.cards);
-          if (node.card) patchCard([node.card]);
+      if (node) {
+        node.data = JSON.parse(JSON.stringify(this._data));
+        // Stamp a permanent identity on first save so future matching
+        // doesn't depend on the title.
+        if (!node.storage_key) {
+          node.storage_key = this._config.storage_key || this._uid();
+          this._config = { ...this._config, storage_key: node.storage_key };
         }
-      };
-
-      for (const view of (cfg.views || [])) {
-        patchCard(view.cards);
-        for (const section of (view.sections || [])) {
-          patchCard(section.cards);
-        }
-      }
-
-      if (found) {
-        await callWS({
+        await this._callWS({
           type: 'lovelace/config/save',
           url_path: urlPath,
           config: cfg,
         });
+        this._lastLocalSave = Date.now();
+        this._setSyncError(null);
         console.info(`ChoreTracker v${CARD_VERSION}: data saved to dashboard config (synced to all devices)`);
       } else {
+        this._setSyncError('Card not found in dashboard config — changes saved on this device only.');
         console.warn('ChoreTracker: could not find card in lovelace config — data saved to localStorage only');
       }
     } catch (e) {
+      this._setSyncError('Sync failed — changes saved on this device only.');
       console.warn('ChoreTracker: lovelace save failed —', e.message || e);
     }
+  }
+
+  // ─── SYNC STATUS BANNER ─────────────────────────────────────────────────
+  // Surface sync failures in the card instead of only the console. Updates
+  // the banner element in place — no full re-render, so it can't clobber a
+  // form the user is typing in.
+  _setSyncError(message) {
+    this._syncError = message || null;
+    const el = this.shadowRoot.getElementById('sync-banner');
+    if (!el) return;
+    if (this._syncError) {
+      el.textContent = `⚠️ ${this._syncError}`;
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  // ─── LIVE REFRESH ───────────────────────────────────────────────────────
+  // HA fires lovelace_updated whenever any client saves the dashboard.
+  // Pull the fresh data so this device updates without a page reload —
+  // but never while the user is in the middle of something.
+  _subscribeToUpdates() {
+    if (this._updatesSubscribed || !this._hass?.connection?.subscribeEvents) return;
+    this._updatesSubscribed = true;
+    this._hass.connection.subscribeEvents(() => {
+      clearTimeout(this._refreshTimer);
+      this._refreshTimer = setTimeout(() => this._refreshFromServer(), 400);
+    }, 'lovelace_updated');
+  }
+
+  _isUserBusy() {
+    if (this._state.view === 'admin') return true;
+    if (this._state.claimingChore) return true;
+    const active = this.shadowRoot.activeElement;
+    return !!(active && (active.tagName === 'INPUT' || active.tagName === 'SELECT'));
+  }
+
+  async _refreshFromServer() {
+    // Ignore the echo of our own save
+    if (this._saving || this._saveTimer || (Date.now() - (this._lastLocalSave || 0)) < 2000) return;
+    if (this._isUserBusy()) return;
+    try {
+      const { cfg } = await this._fetchDashboardConfig();
+      const node = this._findCardNode(cfg);
+      if (!node || !node.data) return;
+      const fresh = JSON.stringify(node.data);
+      if (fresh === JSON.stringify(this._data)) return; // nothing new
+      this._data = JSON.parse(fresh);
+      localStorage.setItem(this._storageKey(), fresh);
+      this._checkRecurrenceResets();
+      this._render();
+      console.info(`ChoreTracker v${CARD_VERSION}: refreshed data from another device`);
+    } catch (_) { /* transient — next lovelace_updated will retry */ }
   }
 
   _uid() {
@@ -358,6 +416,7 @@ class ChoreTrackerCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${this._styles()}</style>
       <ha-card>
+        <div class="sync-banner" id="sync-banner" style="display:${this._syncError ? 'block' : 'none'}">${this._syncError ? `⚠️ ${esc(this._syncError)}` : ''}</div>
         ${this._state.view === 'admin' ? this._renderAdmin() : this._renderMain()}
       </ha-card>
     `;
@@ -1036,6 +1095,11 @@ class ChoreTrackerCard extends HTMLElement {
         overflow: hidden;
         color: var(--primary-text-color, #333);
         position: relative;
+      }
+      .sync-banner {
+        background: #B71C1C; color: #fff;
+        padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
+        text-align: center;
       }
       .header {
         background: #003366;
