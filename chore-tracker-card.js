@@ -1,4 +1,4 @@
-// Chore Tracker Card for Home Assistant v1.2.1
+// Chore Tracker Card for Home Assistant v1.2.2
 
 const CHORE_EMOJIS = {
   vacuum: '🧹', vacuuming: '🧹', sweep: '🧹', sweeping: '🧹', mop: '🪣', mopping: '🪣',
@@ -56,126 +56,110 @@ class ChoreTrackerCard extends HTMLElement {
       view: 'main',        // main | admin
     };
     this._initialRenderDone = false;
-    this._dataLoaded = false;
-    this._dataLoading = false;
   }
 
   set hass(hass) {
     this._hass = hass;
-    // Trigger data load + initial render once we have both config and hass
     if (!this._initialRenderDone && this._config) {
       this._initialRenderDone = true;
-      this._initData();
+      this._loadData();
+      this._render();
     }
   }
 
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
-    // If hass is already available kick off load immediately, otherwise
-    // the hass setter will do it when it fires.
-    if (this._hass && !this._dataLoaded && !this._dataLoading) {
-      this._initialRenderDone = true;
-      this._initData();
-    } else {
-      // Show a loading skeleton while we wait
-      this._render();
-    }
+    // Data is embedded directly in the card config (written there by _saveData).
+    // Load it synchronously so the card is ready on first render.
+    this._loadData();
+    this._render();
   }
 
   _storageKey() {
     return `chore_tracker_${(this._config.title || 'default').replace(/\s+/g, '_')}`;
   }
 
-  async _initData() {
-    if (this._dataLoading) return;
-    this._dataLoading = true;
-    this._render(); // show loading state
-    await this._loadData();
-    this._dataLoaded = true;
-    this._dataLoading = false;
-    this._render();
-  }
-
-  // Send a websocket message to HA — works across all HA versions
-  async _callWS(msg) {
-    // hass.callWS is the standard custom-card API
-    if (this._hass && typeof this._hass.callWS === 'function') {
-      return this._hass.callWS(msg);
+  // Synchronous: reads from config.data (written by _saveData via lovelace/config/save).
+  // Falls back to localStorage for pre-v1.2 migration.
+  _loadData() {
+    if (this._config.data && typeof this._config.data === 'object') {
+      this._data = {
+        members: this._config.data.members || [],
+        chores:  this._config.data.chores  || [],
+        pool:    this._config.data.pool    || [],
+      };
+      this._checkRecurrenceResets();
+      return;
     }
-    // Fallback for older HA builds that expose connection directly
-    if (this._hass && this._hass.connection && typeof this._hass.connection.sendMessagePromise === 'function') {
-      return this._hass.connection.sendMessagePromise(msg);
-    }
-    throw new Error('No HA websocket API available');
-  }
-
-  async _loadData() {
-    const key = this._storageKey();
-    console.log(`ChoreTracker [${key}]: loading data…`);
-
-    // 1. Try HA server-side user storage (syncs across all devices)
-    if (this._hass) {
-      try {
-        const result = await this._callWS({
-          type: 'frontend/get_user_data',
-          key,
-        });
-        console.log(`ChoreTracker [${key}]: HA storage result →`, result);
-
-        // result.value is null when nothing has been stored yet
-        if (result && result.value !== null && result.value !== undefined) {
-          this._data = {
-            members: result.value.members || [],
-            chores:  result.value.chores  || [],
-            pool:    result.value.pool    || [],
-          };
-          console.log(`ChoreTracker [${key}]: loaded from HA storage`, this._data);
-          localStorage.setItem(key, JSON.stringify(this._data));
-          this._checkRecurrenceResets();
-          return;
-        }
-        console.log(`ChoreTracker [${key}]: HA storage empty, checking localStorage`);
-      } catch (e) {
-        console.warn(`ChoreTracker [${key}]: HA storage read failed →`, e);
-      }
-    }
-
-    // 2. Fall back to localStorage (pre-v1.2 data lives here)
+    // Migration: check localStorage for data written by older versions
     try {
-      const raw = localStorage.getItem(key);
+      const raw = localStorage.getItem(this._storageKey());
       if (raw) {
         this._data = JSON.parse(raw);
-        console.log(`ChoreTracker [${key}]: loaded from localStorage, migrating to HA storage…`, this._data);
-        // Push existing data up to HA so other devices can see it
-        await this._saveData();
-      } else {
-        console.log(`ChoreTracker [${key}]: no data anywhere — starting fresh`);
-        this._data = { members: [], chores: [], pool: [] };
+        this._checkRecurrenceResets();
+        this._saveData(); // push to lovelace config so all devices see it
+        return;
       }
-    } catch (e) {
-      console.warn(`ChoreTracker [${key}]: localStorage read failed →`, e);
-      this._data = { members: [], chores: [], pool: [] };
-    }
-    this._checkRecurrenceResets();
+    } catch (_) {}
+    this._data = { members: [], chores: [], pool: [] };
   }
 
+  // Writes data into the card's own lovelace dashboard config entry so it is
+  // shared across ALL HA users and devices, not just the current browser.
   async _saveData() {
-    const key = this._storageKey();
-    // Write to localStorage immediately for fast local reads
-    localStorage.setItem(key, JSON.stringify(this._data));
+    // Keep localStorage as a local cache / offline fallback
+    localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+    if (!this._hass) return;
+    try {
+      const callWS = (msg) => {
+        if (typeof this._hass.callWS === 'function') return this._hass.callWS(msg);
+        if (this._hass.connection?.sendMessagePromise) return this._hass.connection.sendMessagePromise(msg);
+        throw new Error('No WS API');
+      };
 
-    // Persist to HA server so every device stays in sync
-    if (this._hass) {
-      try {
-        await this._callWS({
-          type: 'frontend/set_user_data',
-          key,
-          value: this._data,
-        });
-        console.log(`ChoreTracker [${key}]: saved to HA storage`);
-      } catch (e) {
-        console.warn(`ChoreTracker [${key}]: HA storage write failed →`, e);
+      const lovelaceConfig = await callWS({
+        type: 'lovelace/config',
+        url_path: this._config.lovelace_url_path || null,
+      });
+
+      // Deep-clone so we don't mutate the live object
+      const cfg = JSON.parse(JSON.stringify(lovelaceConfig));
+      const dataSnapshot = JSON.parse(JSON.stringify(this._data));
+      let found = false;
+
+      const patchCard = (nodes) => {
+        if (!Array.isArray(nodes)) return;
+        for (const node of nodes) {
+          if (!node || typeof node !== 'object') continue;
+          if (node.type === 'custom:chore-tracker-card' &&
+              (node.title || '') === (this._config.title || 'Chore Tracker')) {
+            node.data = dataSnapshot;
+            found = true;
+            return;
+          }
+          patchCard(node.cards);
+          if (node.card) patchCard([node.card]);
+        }
+      };
+
+      for (const view of (cfg.views || [])) {
+        patchCard(view.cards);
+        for (const section of (view.sections || [])) {
+          patchCard(section.cards);
+        }
       }
+
+      if (found) {
+        await callWS({
+          type: 'lovelace/config/save',
+          url_path: this._config.lovelace_url_path || null,
+          config: cfg,
+        });
+      } else {
+        console.warn('ChoreTracker: could not find card in lovelace config — data saved to localStorage only');
+      }
+    } catch (e) {
+      console.warn('ChoreTracker: lovelace save failed —', e.message || e);
     }
   }
 
@@ -245,24 +229,7 @@ class ChoreTrackerCard extends HTMLElement {
   // ─── RENDER ──────────────────────────────────────────────────────────────
 
   _render() {
-    if (!this._config) return;
-
-    // Show loading screen while fetching from HA storage
-    if (!this._data || this._dataLoading) {
-      this.shadowRoot.innerHTML = `
-        <style>${this._styles()}</style>
-        <ha-card>
-          <div class="header">
-            <span class="header-title">${this._config.title || 'Chore Tracker'}</span>
-          </div>
-          <div class="loading">
-            <div class="loading-spinner"></div>
-            <div>Loading chore data…</div>
-          </div>
-        </ha-card>
-      `;
-      return;
-    }
+    if (!this._config || !this._data) return;
 
     // Default active tab to first member or pool
     if (!this._state.activeTab) {
