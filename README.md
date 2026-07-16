@@ -2,6 +2,8 @@
 
 A Home Assistant custom card for tracking family chores with points and allowance rewards — synced across every device and HA user in your home.
 
+![Chore Tracker Card](images/screenshot.png)
+
 ## Features
 
 - **Family Members** — Add any number of family members with custom avatars

@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.8.2';
+const CARD_VERSION = '1.9.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -82,6 +82,7 @@ class ChoreTrackerCard extends LitElement {
       editingChore: null,
       editingMember: null,
       claimingChore: null, // pool chore id being claimed — shows member picker
+      resettingChore: null, // chore id being reset — shows per-member picker
       view: 'main',        // main | admin
     };
     this._initialRenderDone = false;
@@ -639,14 +640,14 @@ class ChoreTrackerCard extends LitElement {
     const tab = this._state.adminTab;
     return html`
       <div class="header">
-        <button class="back-btn" @click=${() => this._setState({ view: 'main', adminUnlocked: false })}>← ${this._t('back')}</button>
+        <button class="back-btn" @click=${() => this._setState({ view: 'main', adminUnlocked: false, resettingChore: null })}>← ${this._t('back')}</button>
         <span class="header-title">${this._t('admin_console')}</span>
-        <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: 'main', adminUnlocked: false })}>🔒</button>
+        <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: 'main', adminUnlocked: false, resettingChore: null })}>🔒</button>
       </div>
       <div class="tab-bar admin-tabs">
         ${['chores', 'members', 'pool'].map(t => html`
           <button class="member-tab ${tab === t ? 'active' : ''}"
-            @click=${() => this._setState({ adminTab: t, editingChore: null, editingMember: null })}>
+            @click=${() => this._setState({ adminTab: t, editingChore: null, editingMember: null, resettingChore: null })}>
             ${t === 'chores' ? this._t('chores') : t === 'members' ? this._t('members') : this._t('available_chores')}
           </button>
         `)}
@@ -656,7 +657,68 @@ class ChoreTrackerCard extends LitElement {
         ${tab === 'members' ? this._renderAdminMembers() : nothing}
         ${tab === 'pool' ? this._renderAdminPool() : nothing}
       </div>
+      ${this._state.resettingChore ? this._renderResetModal() : nothing}
     `;
+  }
+
+  // Per-member reset picker: shows each assigned member with their current
+  // status; tapping resets just that member. "Reset for all" clears everyone.
+  _renderResetModal() {
+    const chore = (this._data.chores || []).find(c => c.id === this._state.resettingChore);
+    if (!chore) return nothing;
+    const members = (chore.assignedTo || [])
+      .map(id => (this._data.members || []).find(m => m.id === id))
+      .filter(Boolean);
+
+    const statusIcon = (memberId) => {
+      const st = (chore.memberStates || {})[memberId] || {};
+      if (st.completed) return '✔';
+      if (st.pending && this._config.require_approval) return '⏳';
+      return '▢';
+    };
+
+    return html`
+      <div class="modal-overlay" @click=${() => this._setState({ resettingChore: null })}>
+        <div class="modal" @click=${e => e.stopPropagation()}>
+          <div class="modal-title">🔄 ${this._t('reset_completion')}: ${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}</div>
+          <div class="modal-subtitle">${this._t('who_reset')}</div>
+          <div class="modal-members">
+            ${members.map(m => html`
+              <button class="modal-member-btn" @click=${() => this._resetChoreFor(chore.id, m.id)}>
+                <span class="modal-avatar">${m.avatar || m.name[0].toUpperCase()}</span>
+                <span class="modal-member-name">${m.name}</span>
+                <span class="modal-status">${statusIcon(m.id)}</span>
+              </button>
+            `)}
+          </div>
+          <div class="form-actions">
+            <button class="danger-btn" @click=${() => { this._resetChore(chore.id); this._setState({ resettingChore: null }); }}>
+              ${this._t('reset_all')}
+            </button>
+            <button class="secondary-btn" @click=${() => this._setState({ resettingChore: null })}>${this._t('cancel')}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Reset one member's completion of a chore (deducting earnings if it was
+  // completed). The modal stays open so several members can be reset in a row.
+  _resetChoreFor(choreId, memberId) {
+    const chore = (this._data.chores || []).find(c => c.id === choreId);
+    if (!chore) return;
+    const st = (chore.memberStates || {})[memberId];
+    if (!st) return; // nothing to reset
+    if (st.completed) {
+      const member = (this._data.members || []).find(m => m.id === memberId);
+      if (member) {
+        member.points = Math.max(0, num(member.points) - num(chore.points));
+        member.dollars = Math.max(0, round2(num(member.dollars) - num(chore.dollars)));
+      }
+    }
+    delete chore.memberStates[memberId];
+    this._saveData();
+    this.requestUpdate();
   }
 
   _renderAdminLogin() {
@@ -807,7 +869,8 @@ class ChoreTrackerCard extends LitElement {
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" @click=${() => this._startEditChore(c.id)}>✏️</button>
-                ${this._dangerIconBtn(`reset-chore:${c.id}`, '🔄', this._t('reset_completion'), () => this._resetChore(c.id))}
+                <button class="icon-btn dark" title=${this._t('reset_completion')}
+                  @click=${() => this._setState({ resettingChore: c.id })}>🔄</button>
               </div>
             </div>
           `;
@@ -1428,6 +1491,8 @@ class ChoreTrackerCard extends LitElement {
       color: var(--primary-text-color, #333); transition: all 0.2s;
     }
     .modal-member-btn:hover { border-color: #0288D1; background: rgba(2,136,209,0.06); color: #003366; }
+    .modal-member-name { flex: 1; text-align: left; }
+    .modal-status { font-size: 1.05rem; }
     .modal-avatar {
       width: 36px; height: 36px;
       background: linear-gradient(135deg, #003366, #0288D1);

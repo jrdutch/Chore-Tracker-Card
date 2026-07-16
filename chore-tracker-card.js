@@ -616,6 +616,8 @@ var TRANSLATIONS = {
     pending_approval: "Pending Approval",
     no_pending: "Nothing waiting for approval. When a member marks a chore done, it will appear here.",
     waiting_approval: "Waiting for approval",
+    who_reset: "Tap a member to reset just their completion:",
+    reset_all: "Reset for all",
     approve: "Approve",
     reject: "Reject",
     days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -686,6 +688,8 @@ var TRANSLATIONS = {
     pending_approval: "Pendientes de aprobaci\xF3n",
     no_pending: "Nada pendiente de aprobaci\xF3n. Cuando un miembro marque una tarea, aparecer\xE1 aqu\xED.",
     waiting_approval: "Esperando aprobaci\xF3n",
+    who_reset: "Toca un miembro para restablecer solo su estado:",
+    reset_all: "Restablecer para todos",
     approve: "Aprobar",
     reject: "Rechazar",
     days: ["Dom", "Lun", "Mar", "Mi\xE9", "Jue", "Vie", "S\xE1b"]
@@ -756,6 +760,8 @@ var TRANSLATIONS = {
     pending_approval: "Ausstehende Freigaben",
     no_pending: "Nichts wartet auf Freigabe. Sobald ein Mitglied eine Aufgabe abhakt, erscheint sie hier.",
     waiting_approval: "Wartet auf Freigabe",
+    who_reset: "Tippe auf ein Mitglied, um nur dessen Status zur\xFCckzusetzen:",
+    reset_all: "F\xFCr alle zur\xFCcksetzen",
     approve: "Freigeben",
     reject: "Ablehnen",
     days: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
@@ -826,6 +832,8 @@ var TRANSLATIONS = {
     pending_approval: "En attente d\u2019approbation",
     no_pending: "Rien en attente d\u2019approbation. Quand un membre marque une t\xE2che, elle appara\xEEtra ici.",
     waiting_approval: "En attente d\u2019approbation",
+    who_reset: "Touchez un membre pour r\xE9initialiser uniquement son \xE9tat :",
+    reset_all: "R\xE9initialiser pour tous",
     approve: "Approuver",
     reject: "Rejeter",
     days: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
@@ -896,6 +904,8 @@ var TRANSLATIONS = {
     pending_approval: "Wacht op goedkeuring",
     no_pending: "Niets wacht op goedkeuring. Zodra een lid een klusje afvinkt, verschijnt het hier.",
     waiting_approval: "Wacht op goedkeuring",
+    who_reset: "Tik op een lid om alleen diens status te resetten:",
+    reset_all: "Voor iedereen resetten",
     approve: "Goedkeuren",
     reject: "Afwijzen",
     days: ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"]
@@ -917,7 +927,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.8.2";
+var CARD_VERSION = "1.9.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1051,6 +1061,8 @@ var ChoreTrackerCard = class extends i4 {
       editingMember: null,
       claimingChore: null,
       // pool chore id being claimed — shows member picker
+      resettingChore: null,
+      // chore id being reset — shows per-member picker
       view: "main"
       // main | admin
     };
@@ -1548,14 +1560,14 @@ var ChoreTrackerCard = class extends i4 {
     const tab = this._state.adminTab;
     return b2`
       <div class="header">
-        <button class="back-btn" @click=${() => this._setState({ view: "main", adminUnlocked: false })}>← ${this._t("back")}</button>
+        <button class="back-btn" @click=${() => this._setState({ view: "main", adminUnlocked: false, resettingChore: null })}>← ${this._t("back")}</button>
         <span class="header-title">${this._t("admin_console")}</span>
-        <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: "main", adminUnlocked: false })}>🔒</button>
+        <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: "main", adminUnlocked: false, resettingChore: null })}>🔒</button>
       </div>
       <div class="tab-bar admin-tabs">
         ${["chores", "members", "pool"].map((t3) => b2`
           <button class="member-tab ${tab === t3 ? "active" : ""}"
-            @click=${() => this._setState({ adminTab: t3, editingChore: null, editingMember: null })}>
+            @click=${() => this._setState({ adminTab: t3, editingChore: null, editingMember: null, resettingChore: null })}>
             ${t3 === "chores" ? this._t("chores") : t3 === "members" ? this._t("members") : this._t("available_chores")}
           </button>
         `)}
@@ -1565,7 +1577,65 @@ var ChoreTrackerCard = class extends i4 {
         ${tab === "members" ? this._renderAdminMembers() : A}
         ${tab === "pool" ? this._renderAdminPool() : A}
       </div>
+      ${this._state.resettingChore ? this._renderResetModal() : A}
     `;
+  }
+  // Per-member reset picker: shows each assigned member with their current
+  // status; tapping resets just that member. "Reset for all" clears everyone.
+  _renderResetModal() {
+    const chore = (this._data.chores || []).find((c4) => c4.id === this._state.resettingChore);
+    if (!chore) return A;
+    const members = (chore.assignedTo || []).map((id) => (this._data.members || []).find((m2) => m2.id === id)).filter(Boolean);
+    const statusIcon = (memberId) => {
+      const st = (chore.memberStates || {})[memberId] || {};
+      if (st.completed) return "\u2714";
+      if (st.pending && this._config.require_approval) return "\u23F3";
+      return "\u25A2";
+    };
+    return b2`
+      <div class="modal-overlay" @click=${() => this._setState({ resettingChore: null })}>
+        <div class="modal" @click=${(e4) => e4.stopPropagation()}>
+          <div class="modal-title">🔄 ${this._t("reset_completion")}: ${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}</div>
+          <div class="modal-subtitle">${this._t("who_reset")}</div>
+          <div class="modal-members">
+            ${members.map((m2) => b2`
+              <button class="modal-member-btn" @click=${() => this._resetChoreFor(chore.id, m2.id)}>
+                <span class="modal-avatar">${m2.avatar || m2.name[0].toUpperCase()}</span>
+                <span class="modal-member-name">${m2.name}</span>
+                <span class="modal-status">${statusIcon(m2.id)}</span>
+              </button>
+            `)}
+          </div>
+          <div class="form-actions">
+            <button class="danger-btn" @click=${() => {
+      this._resetChore(chore.id);
+      this._setState({ resettingChore: null });
+    }}>
+              ${this._t("reset_all")}
+            </button>
+            <button class="secondary-btn" @click=${() => this._setState({ resettingChore: null })}>${this._t("cancel")}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  // Reset one member's completion of a chore (deducting earnings if it was
+  // completed). The modal stays open so several members can be reset in a row.
+  _resetChoreFor(choreId, memberId) {
+    const chore = (this._data.chores || []).find((c4) => c4.id === choreId);
+    if (!chore) return;
+    const st = (chore.memberStates || {})[memberId];
+    if (!st) return;
+    if (st.completed) {
+      const member = (this._data.members || []).find((m2) => m2.id === memberId);
+      if (member) {
+        member.points = Math.max(0, num(member.points) - num(chore.points));
+        member.dollars = Math.max(0, round2(num(member.dollars) - num(chore.dollars)));
+      }
+    }
+    delete chore.memberStates[memberId];
+    this._saveData();
+    this.requestUpdate();
   }
   _renderAdminLogin() {
     return b2`
@@ -1711,7 +1781,8 @@ var ChoreTrackerCard = class extends i4 {
               </div>
               <div class="admin-item-actions">
                 <button class="icon-btn dark" @click=${() => this._startEditChore(c4.id)}>✏️</button>
-                ${this._dangerIconBtn(`reset-chore:${c4.id}`, "\u{1F504}", this._t("reset_completion"), () => this._resetChore(c4.id))}
+                <button class="icon-btn dark" title=${this._t("reset_completion")}
+                  @click=${() => this._setState({ resettingChore: c4.id })}>🔄</button>
               </div>
             </div>
           `;
@@ -2292,6 +2363,8 @@ var ChoreTrackerCard = class extends i4 {
       color: var(--primary-text-color, #333); transition: all 0.2s;
     }
     .modal-member-btn:hover { border-color: #0288D1; background: rgba(2,136,209,0.06); color: #003366; }
+    .modal-member-name { flex: 1; text-align: left; }
+    .modal-status { font-size: 1.05rem; }
     .modal-avatar {
       width: 36px; height: 36px;
       background: linear-gradient(135deg, #003366, #0288D1);
