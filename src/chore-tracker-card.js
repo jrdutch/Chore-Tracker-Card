@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.8.0';
+const CARD_VERSION = '1.8.1';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -774,8 +774,9 @@ class ChoreTrackerCard extends LitElement {
 
     return html`
       <div class="admin-section">
-        ${pending.length ? html`
+        ${this._config.require_approval ? html`
           <div class="section-label">⏳ ${this._t('pending_approval')} (${pending.length})</div>
+          ${pending.length === 0 ? html`<div class="empty-inline pending-empty">${this._t('no_pending')}</div>` : nothing}
           ${pending.map(({ chore, member }) => html`
             <div class="admin-item pending-item">
               <span class="chore-emoji">${chore.emoji || getChoreEmoji(chore.title)}</span>
@@ -1360,6 +1361,10 @@ class ChoreTrackerCard extends LitElement {
     .chore-item.pending { border-color: rgba(251,140,0,0.5); background: rgba(251,140,0,0.06); }
     .pending-label { color: #FB8C00; }
     .pending-item { border-color: rgba(251,140,0,0.5); }
+    .pending-empty {
+      padding: 8px 11px; border: 1px dashed var(--divider-color, #ddd);
+      border-radius: 10px; display: block;
+    }
     .icon-btn.approve { background: #43A047; color: #fff; }
     .icon-btn.approve:hover { background: #2e7d32; }
     .icon-btn.reject { background: #c62828; color: #fff; }

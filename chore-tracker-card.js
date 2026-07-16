@@ -614,6 +614,7 @@ var TRANSLATIONS = {
     sync_failed: "Sync failed \u2014 changes saved on this device only.",
     card_not_found: "Card not found in dashboard config \u2014 changes saved on this device only.",
     pending_approval: "Pending Approval",
+    no_pending: "Nothing waiting for approval. When a member marks a chore done, it will appear here.",
     waiting_approval: "Waiting for approval",
     approve: "Approve",
     reject: "Reject",
@@ -683,6 +684,7 @@ var TRANSLATIONS = {
     sync_failed: "Error de sincronizaci\xF3n \u2014 cambios guardados solo en este dispositivo.",
     card_not_found: "Tarjeta no encontrada en el panel \u2014 cambios guardados solo en este dispositivo.",
     pending_approval: "Pendientes de aprobaci\xF3n",
+    no_pending: "Nada pendiente de aprobaci\xF3n. Cuando un miembro marque una tarea, aparecer\xE1 aqu\xED.",
     waiting_approval: "Esperando aprobaci\xF3n",
     approve: "Aprobar",
     reject: "Rechazar",
@@ -752,6 +754,7 @@ var TRANSLATIONS = {
     sync_failed: "Synchronisierung fehlgeschlagen \u2014 \xC4nderungen nur auf diesem Ger\xE4t gespeichert.",
     card_not_found: "Karte nicht in der Dashboard-Konfiguration gefunden \u2014 \xC4nderungen nur auf diesem Ger\xE4t gespeichert.",
     pending_approval: "Ausstehende Freigaben",
+    no_pending: "Nichts wartet auf Freigabe. Sobald ein Mitglied eine Aufgabe abhakt, erscheint sie hier.",
     waiting_approval: "Wartet auf Freigabe",
     approve: "Freigeben",
     reject: "Ablehnen",
@@ -821,6 +824,7 @@ var TRANSLATIONS = {
     sync_failed: "\xC9chec de la synchronisation \u2014 modifications enregistr\xE9es uniquement sur cet appareil.",
     card_not_found: "Carte introuvable dans la configuration du tableau de bord \u2014 modifications enregistr\xE9es uniquement sur cet appareil.",
     pending_approval: "En attente d\u2019approbation",
+    no_pending: "Rien en attente d\u2019approbation. Quand un membre marque une t\xE2che, elle appara\xEEtra ici.",
     waiting_approval: "En attente d\u2019approbation",
     approve: "Approuver",
     reject: "Rejeter",
@@ -890,6 +894,7 @@ var TRANSLATIONS = {
     sync_failed: "Synchronisatie mislukt \u2014 wijzigingen alleen op dit apparaat opgeslagen.",
     card_not_found: "Kaart niet gevonden in dashboardconfiguratie \u2014 wijzigingen alleen op dit apparaat opgeslagen.",
     pending_approval: "Wacht op goedkeuring",
+    no_pending: "Niets wacht op goedkeuring. Zodra een lid een klusje afvinkt, verschijnt het hier.",
     waiting_approval: "Wacht op goedkeuring",
     approve: "Goedkeuren",
     reject: "Afwijzen",
@@ -912,7 +917,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.8.0";
+var CARD_VERSION = "1.8.1";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1674,8 +1679,9 @@ var ChoreTrackerCard = class extends i4 {
     const pending = this._config.require_approval ? this._pendingApprovals() : [];
     return b2`
       <div class="admin-section">
-        ${pending.length ? b2`
+        ${this._config.require_approval ? b2`
           <div class="section-label">⏳ ${this._t("pending_approval")} (${pending.length})</div>
+          ${pending.length === 0 ? b2`<div class="empty-inline pending-empty">${this._t("no_pending")}</div>` : A}
           ${pending.map(({ chore, member }) => b2`
             <div class="admin-item pending-item">
               <span class="chore-emoji">${chore.emoji || getChoreEmoji(chore.title)}</span>
@@ -2219,6 +2225,10 @@ var ChoreTrackerCard = class extends i4 {
     .chore-item.pending { border-color: rgba(251,140,0,0.5); background: rgba(251,140,0,0.06); }
     .pending-label { color: #FB8C00; }
     .pending-item { border-color: rgba(251,140,0,0.5); }
+    .pending-empty {
+      padding: 8px 11px; border: 1px dashed var(--divider-color, #ddd);
+      border-radius: 10px; display: block;
+    }
     .icon-btn.approve { background: #43A047; color: #fff; }
     .icon-btn.approve:hover { background: #2e7d32; }
     .icon-btn.reject { background: #c62828; color: #fff; }
