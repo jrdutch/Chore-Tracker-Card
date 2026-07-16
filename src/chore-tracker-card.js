@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.7.0';
+const CARD_VERSION = '1.8.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -66,6 +66,12 @@ const DEFAULT_CONFIG = {
   admin_password: '1234',
 };
 
+// Saving to the dashboard makes HA re-create the card element, which used to
+// reset the selected tab and log admins out. UI state lives here in module
+// scope (keyed per card) so it survives element re-creation; a full page
+// reload still starts fresh.
+const UI_STATE = new Map();
+
 class ChoreTrackerCard extends LitElement {
   constructor() {
     super();
@@ -122,6 +128,13 @@ class ChoreTrackerCard extends LitElement {
 
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
+    // Adopt UI state from a previous element for this card (HA re-creates
+    // card elements after every dashboard save). The state object is mutated
+    // in place, so the map entry stays current without re-registering.
+    const uiKeys = [this._config.storage_key, this._config.title || 'default'].filter(Boolean);
+    const existing = uiKeys.find(k => UI_STATE.has(k));
+    if (existing) this._state = UI_STATE.get(existing);
+    uiKeys.forEach(k => UI_STATE.set(k, this._state));
     // Data is embedded directly in the card config (written there by _saveData).
     // Load it synchronously so the card is ready on first render.
     this._loadData();
@@ -399,7 +412,12 @@ class ChoreTrackerCard extends LitElement {
       .filter(c => (c.assignedTo || []).includes(memberId))
       .map(c => {
         const ms = ((c.memberStates || {})[memberId] || {});
-        return { ...c, completed: ms.completed || false };
+        return {
+          ...c,
+          completed: ms.completed || false,
+          // Only meaningful while approval mode is on — ignore stale flags
+          pending: (this._config.require_approval && ms.pending && !ms.completed) || false,
+        };
       });
   }
 
@@ -510,15 +528,16 @@ class ChoreTrackerCard extends LitElement {
       </div>
       <div class="chores-list">
         ${chores.length ? chores.map(c => html`
-          <div class="chore-item ${c.completed ? 'completed' : ''}">
-            <button class="chore-check ${c.completed ? 'checked' : ''}"
+          <div class="chore-item ${c.completed ? 'completed' : ''} ${c.pending ? 'pending' : ''}">
+            <button class="chore-check ${c.completed ? 'checked' : ''} ${c.pending ? 'pending' : ''}"
               @click=${() => this._toggleChore(c.id, m.id)}>
-              ${c.completed ? '✔' : ''}
+              ${c.completed ? '✔' : c.pending ? '⏳' : ''}
             </button>
             <span class="chore-emoji">${c.emoji || getChoreEmoji(c.title)}</span>
             <div class="chore-body">
               <span class="chore-title">${c.title}</span>
-              ${c.recurrence && c.recurrence !== 'none' ? html`<span class="chore-recur">${this._recurLabel(c)}</span>` : nothing}
+              ${c.pending ? html`<span class="chore-recur pending-label">⏳ ${this._t('waiting_approval')}</span>`
+                : c.recurrence && c.recurrence !== 'none' ? html`<span class="chore-recur">${this._recurLabel(c)}</span>` : nothing}
             </div>
             <div class="chore-rewards">
               ${c.points ? html`<span class="reward-badge points">⭐${c.points}</span>` : nothing}
@@ -751,8 +770,28 @@ class ChoreTrackerCard extends LitElement {
       `;
     }
 
+    const pending = this._config.require_approval ? this._pendingApprovals() : [];
+
     return html`
       <div class="admin-section">
+        ${pending.length ? html`
+          <div class="section-label">⏳ ${this._t('pending_approval')} (${pending.length})</div>
+          ${pending.map(({ chore, member }) => html`
+            <div class="admin-item pending-item">
+              <span class="chore-emoji">${chore.emoji || getChoreEmoji(chore.title)}</span>
+              <div class="admin-item-info">
+                <div class="admin-item-title">${chore.title}</div>
+                <div class="admin-item-meta">${member.avatar || ''} ${member.name} · ⭐${chore.points || 0} · 💵$${num(chore.dollars).toFixed(2)}</div>
+              </div>
+              <div class="admin-item-actions">
+                <button class="icon-btn approve" title=${this._t('approve')}
+                  @click=${() => this._approveChore(chore.id, member.id)}>✔</button>
+                <button class="icon-btn reject" title=${this._t('reject')}
+                  @click=${() => this._rejectChore(chore.id, member.id)}>✖</button>
+              </div>
+            </div>
+          `)}
+        ` : nothing}
         <button class="primary-btn full-btn" @click=${() => this._startEditChore('new')}>+ ${this._t('add_chore')}</button>
         ${chores.map(c => {
           const assignedNames = (c.assignedTo || [])
@@ -910,10 +949,31 @@ class ChoreTrackerCard extends LitElement {
     if (!chore.memberStates) chore.memberStates = {};
     if (!chore.memberStates[memberId]) chore.memberStates[memberId] = {};
     const state = chore.memberStates[memberId];
+    const member = (this._data.members || []).find(m => m.id === memberId);
+
+    // Approval mode: tapping marks the chore as waiting for an admin.
+    // No points are awarded until approval, and an approved (completed)
+    // chore can only be undone by an admin reset — not by the member.
+    if (this._config.require_approval) {
+      if (state.completed) return;
+      if (state.pending) {
+        state.pending = false; // member changed their mind
+      } else {
+        state.pending = true;
+        this._fireHAEvent('chore_tracker_chore_pending', {
+          member: member ? member.name : '',
+          chore: chore.title,
+        });
+      }
+      this._saveData();
+      this.requestUpdate();
+      return;
+    }
+
     const wasCompleted = state.completed;
     state.completed = !wasCompleted;
+    state.pending = false; // clear any leftover approval request
 
-    const member = (this._data.members || []).find(m => m.id === memberId);
     if (member) {
       const pts = num(chore.points);
       const dlr = num(chore.dollars);
@@ -943,6 +1003,59 @@ class ChoreTrackerCard extends LitElement {
       }
     }
 
+    this._saveData();
+    this.requestUpdate();
+  }
+
+  // All (chore, member) pairs waiting for admin approval
+  _pendingApprovals() {
+    const out = [];
+    (this._data.chores || []).forEach(chore => {
+      Object.entries(chore.memberStates || {}).forEach(([memberId, st]) => {
+        if (st.pending && !st.completed) {
+          const member = (this._data.members || []).find(m => m.id === memberId);
+          if (member) out.push({ chore, member });
+        }
+      });
+    });
+    return out;
+  }
+
+  _approveChore(choreId, memberId) {
+    const chore = (this._data.chores || []).find(c => c.id === choreId);
+    const member = (this._data.members || []).find(m => m.id === memberId);
+    if (!chore || !member) return;
+    const state = (chore.memberStates || {})[memberId];
+    if (!state || !state.pending || state.completed) return;
+
+    state.pending = false;
+    state.completed = true;
+    member.points = num(member.points) + num(chore.points);
+    member.dollars = round2(num(member.dollars) + num(chore.dollars));
+
+    this._fireHAEvent('chore_tracker_chore_completed', {
+      member: member.name,
+      chore: chore.title,
+      points: num(chore.points),
+      dollars: num(chore.dollars),
+    });
+    if (this._allChoresDone(memberId)) {
+      this._fireHAEvent('chore_tracker_all_done', {
+        member: member.name,
+        total_points: num(member.points),
+        total_dollars: num(member.dollars),
+      });
+    }
+    this._saveData();
+    this.requestUpdate();
+  }
+
+  _rejectChore(choreId, memberId) {
+    const chore = (this._data.chores || []).find(c => c.id === choreId);
+    if (!chore) return;
+    const state = (chore.memberStates || {})[memberId];
+    if (!state || !state.pending) return;
+    state.pending = false;
     this._saveData();
     this.requestUpdate();
   }
@@ -1243,6 +1356,14 @@ class ChoreTrackerCard extends LitElement {
       font-size: 0.8rem; color: #fff; flex-shrink: 0; transition: all 0.2s;
     }
     .chore-check.checked { background: #43A047; border-color: #43A047; }
+    .chore-check.pending { background: #FB8C00; border-color: #FB8C00; font-size: 0.7rem; }
+    .chore-item.pending { border-color: rgba(251,140,0,0.5); background: rgba(251,140,0,0.06); }
+    .pending-label { color: #FB8C00; }
+    .pending-item { border-color: rgba(251,140,0,0.5); }
+    .icon-btn.approve { background: #43A047; color: #fff; }
+    .icon-btn.approve:hover { background: #2e7d32; }
+    .icon-btn.reject { background: #c62828; color: #fff; }
+    .icon-btn.reject:hover { background: #b71c1c; }
     .chore-emoji { font-size: 1.25rem; flex-shrink: 0; }
     .chore-body { flex: 1; min-width: 0; }
     .chore-title { font-size: 0.9rem; font-weight: 500; display: block; }
@@ -1411,6 +1532,8 @@ class ChoreTrackerCardEditor extends LitElement {
     }
     input:focus { border-color: #0288D1; outline: none; }
     .hint { font-size: 0.75rem; font-weight: 400; color: var(--secondary-text-color, #888); }
+    .check-line { display: flex; align-items: center; gap: 8px; flex-direction: row; }
+    .check-line input { width: auto; }
   `;
 
   set hass(hass) { this._hass = hass; }
@@ -1433,6 +1556,14 @@ class ChoreTrackerCardEditor extends LitElement {
             @input=${() => this._valueChanged()} />
           <span class="hint">Gate for the parent console. Not a security boundary — anyone who can edit the dashboard can see it.</span>
         </label>
+        <label class="check-row">
+          <span class="check-line">
+            <input type="checkbox" id="cfg-approval" .checked=${!!this._config.require_approval}
+              @change=${() => this._valueChanged()} />
+            Require admin approval
+          </span>
+          <span class="hint">Members mark chores done, but points are only awarded after an admin approves them in the admin console.</span>
+        </label>
         <label>Dashboard URL path (advanced)
           <input id="cfg-urlpath" .value=${this._config.lovelace_url_path || ''} placeholder="auto-detected"
             @input=${() => this._valueChanged()} />
@@ -1451,6 +1582,9 @@ class ChoreTrackerCardEditor extends LitElement {
     const urlPath = get('cfg-urlpath');
     if (urlPath) config.lovelace_url_path = urlPath;
     else delete config.lovelace_url_path;
+    const approval = this.shadowRoot.getElementById('cfg-approval')?.checked;
+    if (approval) config.require_approval = true;
+    else delete config.require_approval;
     this._config = config;
     this.dispatchEvent(new CustomEvent('config-changed', {
       detail: { config },

@@ -613,6 +613,10 @@ var TRANSLATIONS = {
     pts: "pts",
     sync_failed: "Sync failed \u2014 changes saved on this device only.",
     card_not_found: "Card not found in dashboard config \u2014 changes saved on this device only.",
+    pending_approval: "Pending Approval",
+    waiting_approval: "Waiting for approval",
+    approve: "Approve",
+    reject: "Reject",
     days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
   es: {
@@ -678,6 +682,10 @@ var TRANSLATIONS = {
     pts: "pts",
     sync_failed: "Error de sincronizaci\xF3n \u2014 cambios guardados solo en este dispositivo.",
     card_not_found: "Tarjeta no encontrada en el panel \u2014 cambios guardados solo en este dispositivo.",
+    pending_approval: "Pendientes de aprobaci\xF3n",
+    waiting_approval: "Esperando aprobaci\xF3n",
+    approve: "Aprobar",
+    reject: "Rechazar",
     days: ["Dom", "Lun", "Mar", "Mi\xE9", "Jue", "Vie", "S\xE1b"]
   },
   de: {
@@ -743,6 +751,10 @@ var TRANSLATIONS = {
     pts: "Pkt.",
     sync_failed: "Synchronisierung fehlgeschlagen \u2014 \xC4nderungen nur auf diesem Ger\xE4t gespeichert.",
     card_not_found: "Karte nicht in der Dashboard-Konfiguration gefunden \u2014 \xC4nderungen nur auf diesem Ger\xE4t gespeichert.",
+    pending_approval: "Ausstehende Freigaben",
+    waiting_approval: "Wartet auf Freigabe",
+    approve: "Freigeben",
+    reject: "Ablehnen",
     days: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"]
   },
   fr: {
@@ -808,6 +820,10 @@ var TRANSLATIONS = {
     pts: "pts",
     sync_failed: "\xC9chec de la synchronisation \u2014 modifications enregistr\xE9es uniquement sur cet appareil.",
     card_not_found: "Carte introuvable dans la configuration du tableau de bord \u2014 modifications enregistr\xE9es uniquement sur cet appareil.",
+    pending_approval: "En attente d\u2019approbation",
+    waiting_approval: "En attente d\u2019approbation",
+    approve: "Approuver",
+    reject: "Rejeter",
     days: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
   },
   nl: {
@@ -873,6 +889,10 @@ var TRANSLATIONS = {
     pts: "ptn",
     sync_failed: "Synchronisatie mislukt \u2014 wijzigingen alleen op dit apparaat opgeslagen.",
     card_not_found: "Kaart niet gevonden in dashboardconfiguratie \u2014 wijzigingen alleen op dit apparaat opgeslagen.",
+    pending_approval: "Wacht op goedkeuring",
+    waiting_approval: "Wacht op goedkeuring",
+    approve: "Goedkeuren",
+    reject: "Afwijzen",
     days: ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"]
   }
 };
@@ -892,7 +912,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.7.0";
+var CARD_VERSION = "1.8.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1012,6 +1032,7 @@ var DEFAULT_CONFIG = {
   title: "Chore Tracker",
   admin_password: "1234"
 };
+var UI_STATE = /* @__PURE__ */ new Map();
 var ChoreTrackerCard = class extends i4 {
   constructor() {
     super();
@@ -1067,6 +1088,10 @@ var ChoreTrackerCard = class extends i4 {
   }
   setConfig(config) {
     this._config = { ...DEFAULT_CONFIG, ...config };
+    const uiKeys = [this._config.storage_key, this._config.title || "default"].filter(Boolean);
+    const existing = uiKeys.find((k2) => UI_STATE.has(k2));
+    if (existing) this._state = UI_STATE.get(existing);
+    uiKeys.forEach((k2) => UI_STATE.set(k2, this._state));
     this._loadData();
     this.requestUpdate();
   }
@@ -1314,7 +1339,12 @@ var ChoreTrackerCard = class extends i4 {
   _getMemberChores(memberId) {
     return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId)).map((c4) => {
       const ms = (c4.memberStates || {})[memberId] || {};
-      return { ...c4, completed: ms.completed || false };
+      return {
+        ...c4,
+        completed: ms.completed || false,
+        // Only meaningful while approval mode is on — ignore stale flags
+        pending: this._config.require_approval && ms.pending && !ms.completed || false
+      };
     });
   }
   _allChoresDone(memberId) {
@@ -1411,15 +1441,15 @@ var ChoreTrackerCard = class extends i4 {
       </div>
       <div class="chores-list">
         ${chores.length ? chores.map((c4) => b2`
-          <div class="chore-item ${c4.completed ? "completed" : ""}">
-            <button class="chore-check ${c4.completed ? "checked" : ""}"
+          <div class="chore-item ${c4.completed ? "completed" : ""} ${c4.pending ? "pending" : ""}">
+            <button class="chore-check ${c4.completed ? "checked" : ""} ${c4.pending ? "pending" : ""}"
               @click=${() => this._toggleChore(c4.id, m2.id)}>
-              ${c4.completed ? "\u2714" : ""}
+              ${c4.completed ? "\u2714" : c4.pending ? "\u23F3" : ""}
             </button>
             <span class="chore-emoji">${c4.emoji || getChoreEmoji(c4.title)}</span>
             <div class="chore-body">
               <span class="chore-title">${c4.title}</span>
-              ${c4.recurrence && c4.recurrence !== "none" ? b2`<span class="chore-recur">${this._recurLabel(c4)}</span>` : A}
+              ${c4.pending ? b2`<span class="chore-recur pending-label">⏳ ${this._t("waiting_approval")}</span>` : c4.recurrence && c4.recurrence !== "none" ? b2`<span class="chore-recur">${this._recurLabel(c4)}</span>` : A}
             </div>
             <div class="chore-rewards">
               ${c4.points ? b2`<span class="reward-badge points">⭐${c4.points}</span>` : A}
@@ -1641,8 +1671,27 @@ var ChoreTrackerCard = class extends i4 {
         </div>
       `;
     }
+    const pending = this._config.require_approval ? this._pendingApprovals() : [];
     return b2`
       <div class="admin-section">
+        ${pending.length ? b2`
+          <div class="section-label">⏳ ${this._t("pending_approval")} (${pending.length})</div>
+          ${pending.map(({ chore, member }) => b2`
+            <div class="admin-item pending-item">
+              <span class="chore-emoji">${chore.emoji || getChoreEmoji(chore.title)}</span>
+              <div class="admin-item-info">
+                <div class="admin-item-title">${chore.title}</div>
+                <div class="admin-item-meta">${member.avatar || ""} ${member.name} · ⭐${chore.points || 0} · 💵$${num(chore.dollars).toFixed(2)}</div>
+              </div>
+              <div class="admin-item-actions">
+                <button class="icon-btn approve" title=${this._t("approve")}
+                  @click=${() => this._approveChore(chore.id, member.id)}>✔</button>
+                <button class="icon-btn reject" title=${this._t("reject")}
+                  @click=${() => this._rejectChore(chore.id, member.id)}>✖</button>
+              </div>
+            </div>
+          `)}
+        ` : A}
         <button class="primary-btn full-btn" @click=${() => this._startEditChore("new")}>+ ${this._t("add_chore")}</button>
         ${chores.map((c4) => {
       const assignedNames = (c4.assignedTo || []).map((id) => members.find((m2) => m2.id === id)?.name).filter(Boolean).join(", ");
@@ -1788,9 +1837,25 @@ var ChoreTrackerCard = class extends i4 {
     if (!chore.memberStates) chore.memberStates = {};
     if (!chore.memberStates[memberId]) chore.memberStates[memberId] = {};
     const state = chore.memberStates[memberId];
+    const member = (this._data.members || []).find((m2) => m2.id === memberId);
+    if (this._config.require_approval) {
+      if (state.completed) return;
+      if (state.pending) {
+        state.pending = false;
+      } else {
+        state.pending = true;
+        this._fireHAEvent("chore_tracker_chore_pending", {
+          member: member ? member.name : "",
+          chore: chore.title
+        });
+      }
+      this._saveData();
+      this.requestUpdate();
+      return;
+    }
     const wasCompleted = state.completed;
     state.completed = !wasCompleted;
-    const member = (this._data.members || []).find((m2) => m2.id === memberId);
+    state.pending = false;
     if (member) {
       const pts = num(chore.points);
       const dlr = num(chore.dollars);
@@ -1817,6 +1882,54 @@ var ChoreTrackerCard = class extends i4 {
         });
       }
     }
+    this._saveData();
+    this.requestUpdate();
+  }
+  // All (chore, member) pairs waiting for admin approval
+  _pendingApprovals() {
+    const out = [];
+    (this._data.chores || []).forEach((chore) => {
+      Object.entries(chore.memberStates || {}).forEach(([memberId, st]) => {
+        if (st.pending && !st.completed) {
+          const member = (this._data.members || []).find((m2) => m2.id === memberId);
+          if (member) out.push({ chore, member });
+        }
+      });
+    });
+    return out;
+  }
+  _approveChore(choreId, memberId) {
+    const chore = (this._data.chores || []).find((c4) => c4.id === choreId);
+    const member = (this._data.members || []).find((m2) => m2.id === memberId);
+    if (!chore || !member) return;
+    const state = (chore.memberStates || {})[memberId];
+    if (!state || !state.pending || state.completed) return;
+    state.pending = false;
+    state.completed = true;
+    member.points = num(member.points) + num(chore.points);
+    member.dollars = round2(num(member.dollars) + num(chore.dollars));
+    this._fireHAEvent("chore_tracker_chore_completed", {
+      member: member.name,
+      chore: chore.title,
+      points: num(chore.points),
+      dollars: num(chore.dollars)
+    });
+    if (this._allChoresDone(memberId)) {
+      this._fireHAEvent("chore_tracker_all_done", {
+        member: member.name,
+        total_points: num(member.points),
+        total_dollars: num(member.dollars)
+      });
+    }
+    this._saveData();
+    this.requestUpdate();
+  }
+  _rejectChore(choreId, memberId) {
+    const chore = (this._data.chores || []).find((c4) => c4.id === choreId);
+    if (!chore) return;
+    const state = (chore.memberStates || {})[memberId];
+    if (!state || !state.pending) return;
+    state.pending = false;
     this._saveData();
     this.requestUpdate();
   }
@@ -2102,6 +2215,14 @@ var ChoreTrackerCard = class extends i4 {
       font-size: 0.8rem; color: #fff; flex-shrink: 0; transition: all 0.2s;
     }
     .chore-check.checked { background: #43A047; border-color: #43A047; }
+    .chore-check.pending { background: #FB8C00; border-color: #FB8C00; font-size: 0.7rem; }
+    .chore-item.pending { border-color: rgba(251,140,0,0.5); background: rgba(251,140,0,0.06); }
+    .pending-label { color: #FB8C00; }
+    .pending-item { border-color: rgba(251,140,0,0.5); }
+    .icon-btn.approve { background: #43A047; color: #fff; }
+    .icon-btn.approve:hover { background: #2e7d32; }
+    .icon-btn.reject { background: #c62828; color: #fff; }
+    .icon-btn.reject:hover { background: #b71c1c; }
     .chore-emoji { font-size: 1.25rem; flex-shrink: 0; }
     .chore-body { flex: 1; min-width: 0; }
     .chore-title { font-size: 0.9rem; font-weight: 500; display: block; }
@@ -2266,6 +2387,8 @@ var ChoreTrackerCardEditor = class extends i4 {
     }
     input:focus { border-color: #0288D1; outline: none; }
     .hint { font-size: 0.75rem; font-weight: 400; color: var(--secondary-text-color, #888); }
+    .check-line { display: flex; align-items: center; gap: 8px; flex-direction: row; }
+    .check-line input { width: auto; }
   `;
   set hass(hass) {
     this._hass = hass;
@@ -2287,6 +2410,14 @@ var ChoreTrackerCardEditor = class extends i4 {
             @input=${() => this._valueChanged()} />
           <span class="hint">Gate for the parent console. Not a security boundary — anyone who can edit the dashboard can see it.</span>
         </label>
+        <label class="check-row">
+          <span class="check-line">
+            <input type="checkbox" id="cfg-approval" .checked=${!!this._config.require_approval}
+              @change=${() => this._valueChanged()} />
+            Require admin approval
+          </span>
+          <span class="hint">Members mark chores done, but points are only awarded after an admin approves them in the admin console.</span>
+        </label>
         <label>Dashboard URL path (advanced)
           <input id="cfg-urlpath" .value=${this._config.lovelace_url_path || ""} placeholder="auto-detected"
             @input=${() => this._valueChanged()} />
@@ -2303,6 +2434,9 @@ var ChoreTrackerCardEditor = class extends i4 {
     const urlPath = get("cfg-urlpath");
     if (urlPath) config.lovelace_url_path = urlPath;
     else delete config.lovelace_url_path;
+    const approval = this.shadowRoot.getElementById("cfg-approval")?.checked;
+    if (approval) config.require_approval = true;
+    else delete config.require_approval;
     this._config = config;
     this.dispatchEvent(new CustomEvent("config-changed", {
       detail: { config },

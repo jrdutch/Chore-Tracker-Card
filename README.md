@@ -13,6 +13,7 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 - **Visual Editor** — Configure title and password right in the dashboard UI editor, no YAML needed
 - **Cross-device Sync** — Data is stored in the dashboard config, shared by all HA users and devices; changes made on one device appear live on the others
 - **Admin Console** — Parent console (password-gated) for managing members, chores, and the pool
+- **Approval Mode** (optional) — Kids mark chores done, but points are only awarded after a parent approves them
 - **Safe Deletes** — Destructive buttons require a second confirming tap
 - **Auto Emoji** — Chores automatically get matching emoji icons based on their name, with manual override
 - **HA Theme Support** — Uses your Home Assistant theme (works with light, dark, and glass themes)
@@ -42,6 +43,7 @@ admin_password: "yourpassword"
 | --- | --- | --- |
 | `title` | `Chore Tracker` | Card title shown in the header |
 | `admin_password` | `1234` | Password for the admin console |
+| `require_approval` | `false` | When `true`, marking a chore adds it to a pending list; an admin approves (awards points) or rejects it in the admin console |
 | `language` | *(HA user language)* | UI language override. Built in: `en`, `es`, `de`, `fr`, `nl`. Follows your HA profile language automatically when unset |
 | `storage_key` | *(auto)* | Stable identity for the card's data. Stamped into the config automatically on first save — don't change it, or the card loses track of its data |
 | `lovelace_url_path` | *(auto)* | Only needed if auto-detection of the dashboard fails; set to the dashboard's URL path |
@@ -75,6 +77,17 @@ Deleting or resetting requires a second confirming tap, so a stray finger can't 
 
 > **About the password:** it's a convenience gate to keep kids out of the parent console, not a security boundary — anyone who can edit the dashboard can read it from the card config.
 
+## Approval mode
+
+Turn on **Require admin approval** in the card's visual editor (or set `require_approval: true` in YAML) and the flow becomes:
+
+1. A member taps a chore — it turns orange with an ⏳ "Waiting for approval" label (tapping again withdraws the request; no points yet)
+2. The admin console's **Chores** tab shows a *Pending Approval* list at the top
+3. ✔ **Approve** marks the chore completed and awards the points/dollars; ✖ **Reject** returns it to not-done
+4. Approved chores can only be undone by an admin (reset), not by the member
+
+The `chore_tracker_chore_pending` event fires on each request, so you can send parents a notification to review.
+
 ## Available Chores (pool)
 
 The pool holds optional extra chores that members can **claim** — but only after completing **all** of their currently assigned chores. Claiming asks which eligible member is taking the chore and moves it to their personal list.
@@ -89,7 +102,8 @@ The card fires events on the Home Assistant bus that you can use as automation t
 
 | Event | When | Data |
 | --- | --- | --- |
-| `chore_tracker_chore_completed` | A chore is checked off | `member`, `chore`, `points`, `dollars` |
+| `chore_tracker_chore_completed` | A chore is completed (or approved, in approval mode) | `member`, `chore`, `points`, `dollars` |
+| `chore_tracker_chore_pending` | A member requests approval for a chore (approval mode) | `member`, `chore` |
 | `chore_tracker_all_done` | A member finishes their whole list | `member`, `total_points`, `total_dollars` |
 
 Example — flash a light when a kid finishes all their chores:
