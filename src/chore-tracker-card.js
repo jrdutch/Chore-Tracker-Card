@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.8.1';
+const CARD_VERSION = '1.8.2';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -1213,13 +1213,20 @@ class ChoreTrackerCard extends LitElement {
   // ─── STYLES ──────────────────────────────────────────────────────────────
 
   static styles = css`
-    :host { display: block; font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif); }
+    :host { display: block; height: 100%; font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif); }
     * { box-sizing: border-box; }
     ha-card {
       overflow: hidden;
       color: var(--primary-text-color, #333);
       position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
     }
+    /* When the grid pins a fixed height, scroll the content instead of
+       cutting it off; with rows: 'auto' this has no visible effect. */
+    .tab-content { flex: 1 1 auto; overflow-y: auto; }
+    .header, .tab-bar, .sync-banner { flex-shrink: 0; }
     .sync-banner {
       background: #B71C1C; color: #fff;
       padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
@@ -1522,6 +1529,18 @@ class ChoreTrackerCard extends LitElement {
   }
 
   getCardSize() { return 5; }
+
+  // Sizing contract for sections (grid) dashboards. rows: 'auto' lets the
+  // card grow with its content — tabs, chore lists, and admin views all vary
+  // in height — while still allowing manual resizing within sane bounds.
+  getGridOptions() {
+    return {
+      columns: 12,
+      min_columns: 6,
+      rows: 'auto',
+      min_rows: 3,
+    };
+  }
 }
 
 // ─── VISUAL CONFIG EDITOR ────────────────────────────────────────────────────

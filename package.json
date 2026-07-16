@@ -1,6 +1,6 @@
 {
   "name": "chore-tracker-card",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Home Assistant custom card for tracking family chores with points and allowance rewards",
   "license": "MIT",
   "type": "module",
