@@ -927,7 +927,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.9.0";
+var CARD_VERSION = "1.9.1";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1048,6 +1048,18 @@ var DEFAULT_CONFIG = {
   admin_password: "1234"
 };
 var UI_STATE = /* @__PURE__ */ new Map();
+var SCROLL_STATE = /* @__PURE__ */ new Map();
+function findScrollContainer(el) {
+  let node = el;
+  while (node) {
+    if (node instanceof Element && node.scrollHeight > node.clientHeight + 4) {
+      const overflowY = getComputedStyle(node).overflowY;
+      if (overflowY === "auto" || overflowY === "scroll") return node;
+    }
+    node = node.parentElement || node.getRootNode()?.host || null;
+  }
+  return document.scrollingElement || document.documentElement;
+}
 var ChoreTrackerCard = class extends i4 {
   constructor() {
     super();
@@ -1112,6 +1124,23 @@ var ChoreTrackerCard = class extends i4 {
     this._loadData();
     this.requestUpdate();
   }
+  _uiKey() {
+    return this._config.storage_key || this._config.title || "default";
+  }
+  // Restore scroll after HA rebuilt the view because of our own save.
+  // Re-applied a few times because the view renders progressively.
+  firstUpdated() {
+    const entry = SCROLL_STATE.get(this._uiKey());
+    if (!entry || Date.now() - entry.t > 8e3) return;
+    SCROLL_STATE.delete(this._uiKey());
+    const restore = () => {
+      const sc = findScrollContainer(this);
+      sc.scrollTop = entry.top;
+    };
+    restore();
+    setTimeout(restore, 120);
+    setTimeout(restore, 400);
+  }
   _storageKey() {
     return `chore_tracker_${(this._config.title || "default").replace(/\s+/g, "_")}`;
   }
@@ -1153,7 +1182,7 @@ var ChoreTrackerCard = class extends i4 {
     this._saveTimer = setTimeout(() => {
       this._saveTimer = null;
       this._flushSave();
-    }, 500);
+    }, 2500);
   }
   // Serialize lovelace writes: never two in flight, and a save requested
   // while one is running re-runs after it finishes (with the latest data).
@@ -1254,6 +1283,8 @@ var ChoreTrackerCard = class extends i4 {
           node.storage_key = this._config.storage_key || this._uid();
           this._config = { ...this._config, storage_key: node.storage_key };
         }
+        const sc = findScrollContainer(this);
+        SCROLL_STATE.set(this._uiKey(), { top: sc.scrollTop, t: Date.now() });
         await this._callWS({
           type: "lovelace/config/save",
           url_path: fetched.urlPath,
