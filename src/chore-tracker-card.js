@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.9.1';
+const CARD_VERSION = '1.10.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -914,6 +914,10 @@ class ChoreTrackerCard extends LitElement {
                 <div class="admin-item-meta">${assignedNames || this._t('unassigned')} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}${recurLabel}</div>
               </div>
               <div class="admin-item-actions">
+                <button class="icon-btn dark move-btn" ?disabled=${chores[0]?.id === c.id}
+                  @click=${() => this._moveItem(this._data.chores, c.id, -1)}>▲</button>
+                <button class="icon-btn dark move-btn" ?disabled=${chores[chores.length - 1]?.id === c.id}
+                  @click=${() => this._moveItem(this._data.chores, c.id, 1)}>▼</button>
                 <button class="icon-btn dark" @click=${() => this._startEditChore(c.id)}>✏️</button>
                 <button class="icon-btn dark" title=${this._t('reset_completion')}
                   @click=${() => this._setState({ resettingChore: c.id })}>🔄</button>
@@ -924,6 +928,17 @@ class ChoreTrackerCard extends LitElement {
         ${chores.length === 0 ? html`<div class="empty">${this._t('no_chores_yet')}</div>` : nothing}
       </div>
     `;
+  }
+
+  // Move a chore up/down within its list — member panels render in array
+  // order, so this reorders the chore everywhere.
+  _moveItem(arr, id, delta) {
+    const i = (arr || []).findIndex(c => c.id === id);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    this._saveData();
+    this.requestUpdate();
   }
 
   _startEditChore(id) {
@@ -1028,6 +1043,10 @@ class ChoreTrackerCard extends LitElement {
                 <div class="admin-item-meta">${claimer ? this._t('claimed_by', { name: claimer.name }) : this._t('available')} · ⭐${c.points || 0} · 💵$${num(c.dollars).toFixed(2)}</div>
               </div>
               <div class="admin-item-actions">
+                <button class="icon-btn dark move-btn" ?disabled=${pool[0]?.id === c.id}
+                  @click=${() => this._moveItem(this._data.pool, c.id, -1)}>▲</button>
+                <button class="icon-btn dark move-btn" ?disabled=${pool[pool.length - 1]?.id === c.id}
+                  @click=${() => this._moveItem(this._data.pool, c.id, 1)}>▼</button>
                 <button class="icon-btn dark" @click=${() => this._setState({ editingChore: c.id })}>✏️</button>
                 ${c.claimedBy ? html`<button class="icon-btn dark" title=${this._t('unclaim')} @click=${() => this._unclaimPoolChore(c.id)}>↩️</button>` : nothing}
                 ${this._dangerIconBtn(`del-pool:${c.id}`, '🗑️', this._t('delete'), () => this._deletePoolChore(c.id))}
@@ -1368,6 +1387,8 @@ class ChoreTrackerCard extends LitElement {
     }
     .icon-btn.dark:hover { background: var(--divider-color, #ddd); }
     .icon-btn.dark.armed { background: #c62828; color: #fff; }
+    .move-btn { font-size: 0.7rem; width: 26px; }
+    .move-btn:disabled { opacity: 0.3; cursor: default; }
 
     /* TAB BAR */
     .tab-bar {

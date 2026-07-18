@@ -927,7 +927,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.9.1";
+var CARD_VERSION = "1.10.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1811,6 +1811,10 @@ var ChoreTrackerCard = class extends i4 {
                 <div class="admin-item-meta">${assignedNames || this._t("unassigned")} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}${recurLabel}</div>
               </div>
               <div class="admin-item-actions">
+                <button class="icon-btn dark move-btn" ?disabled=${chores[0]?.id === c4.id}
+                  @click=${() => this._moveItem(this._data.chores, c4.id, -1)}>▲</button>
+                <button class="icon-btn dark move-btn" ?disabled=${chores[chores.length - 1]?.id === c4.id}
+                  @click=${() => this._moveItem(this._data.chores, c4.id, 1)}>▼</button>
                 <button class="icon-btn dark" @click=${() => this._startEditChore(c4.id)}>✏️</button>
                 <button class="icon-btn dark" title=${this._t("reset_completion")}
                   @click=${() => this._setState({ resettingChore: c4.id })}>🔄</button>
@@ -1821,6 +1825,16 @@ var ChoreTrackerCard = class extends i4 {
         ${chores.length === 0 ? b2`<div class="empty">${this._t("no_chores_yet")}</div>` : A}
       </div>
     `;
+  }
+  // Move a chore up/down within its list — member panels render in array
+  // order, so this reorders the chore everywhere.
+  _moveItem(arr, id, delta) {
+    const i5 = (arr || []).findIndex((c4) => c4.id === id);
+    const j = i5 + delta;
+    if (i5 < 0 || j < 0 || j >= arr.length) return;
+    [arr[i5], arr[j]] = [arr[j], arr[i5]];
+    this._saveData();
+    this.requestUpdate();
   }
   _startEditChore(id) {
     this._editRecurrence = null;
@@ -1917,6 +1931,10 @@ var ChoreTrackerCard = class extends i4 {
                 <div class="admin-item-meta">${claimer ? this._t("claimed_by", { name: claimer.name }) : this._t("available")} · ⭐${c4.points || 0} · 💵$${num(c4.dollars).toFixed(2)}</div>
               </div>
               <div class="admin-item-actions">
+                <button class="icon-btn dark move-btn" ?disabled=${pool[0]?.id === c4.id}
+                  @click=${() => this._moveItem(this._data.pool, c4.id, -1)}>▲</button>
+                <button class="icon-btn dark move-btn" ?disabled=${pool[pool.length - 1]?.id === c4.id}
+                  @click=${() => this._moveItem(this._data.pool, c4.id, 1)}>▼</button>
                 <button class="icon-btn dark" @click=${() => this._setState({ editingChore: c4.id })}>✏️</button>
                 ${c4.claimedBy ? b2`<button class="icon-btn dark" title=${this._t("unclaim")} @click=${() => this._unclaimPoolChore(c4.id)}>↩️</button>` : A}
                 ${this._dangerIconBtn(`del-pool:${c4.id}`, "\u{1F5D1}\uFE0F", this._t("delete"), () => this._deletePoolChore(c4.id))}
@@ -2225,6 +2243,8 @@ var ChoreTrackerCard = class extends i4 {
     }
     .icon-btn.dark:hover { background: var(--divider-color, #ddd); }
     .icon-btn.dark.armed { background: #c62828; color: #fff; }
+    .move-btn { font-size: 0.7rem; width: 26px; }
+    .move-btn:disabled { opacity: 0.3; cursor: default; }
 
     /* TAB BAR */
     .tab-bar {
