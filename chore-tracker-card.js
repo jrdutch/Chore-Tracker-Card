@@ -1027,7 +1027,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.11.1";
+var CARD_VERSION = "1.12.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1687,23 +1687,29 @@ var ChoreTrackerCard = class extends i4 {
       ${this._state.walletMember ? this._renderWalletModal() : A}
     `;
   }
-  // Family scoreboard pinned to the bottom of the card. Tapping anyone opens
-  // their wallet (redeem points / cash out money).
+  // Totals pinned to the bottom of the card. By default this shows ONLY the
+  // member whose tab is open — siblings can't compare balances at a glance.
+  // Set show_family_totals: true to opt into an everyone-at-once scoreboard.
   _renderTotalsFooter() {
     const members = this._data.members || [];
     if (!members.length) return A;
+    const showAll = !!this._config.show_family_totals;
+    const shown = showAll ? members : members.filter((m2) => m2.id === this._state.activeTab);
+    if (!shown.length) return A;
     return b2`
       <div class="totals-footer">
-        <div class="totals-label">${this._t("totals")}</div>
+        ${showAll ? b2`<div class="totals-label">${this._t("totals")}</div>` : A}
         <div class="totals-row">
-          ${members.map((m2) => b2`
-            <button class="total-chip" @click=${() => this._setState({ walletMember: m2.id, walletView: "menu" })}>
+          ${shown.map((m2) => b2`
+            <button class="total-chip ${showAll ? "" : "solo"}"
+              @click=${() => this._setState({ walletMember: m2.id, walletView: "menu" })}>
               <span class="total-avatar">${m2.avatar || m2.name[0].toUpperCase()}</span>
               <span class="total-name">${m2.name}</span>
               <span class="total-vals">
                 <span class="total-pts">⭐ ${num(m2.points)}</span>
                 <span class="total-money">💵 $${num(m2.dollars).toFixed(2)}</span>
               </span>
+              ${showAll ? A : b2`<span class="total-cta">🎁 ${this._t("rewards")}</span>`}
             </button>
           `)}
         </div>
@@ -3046,6 +3052,14 @@ var ChoreTrackerCard = class extends i4 {
       font-size: 0.8rem; font-weight: 700;
     }
     .total-name { font-size: 0.78rem; font-weight: 600; }
+    .total-chip.solo { width: 100%; gap: 10px; padding: 7px 11px; }
+    .total-chip.solo .total-name { flex: 1; text-align: left; font-size: 0.85rem; }
+    .total-chip.solo .total-vals { flex-direction: row; gap: 10px; align-items: center; }
+    .total-chip.solo .total-pts, .total-chip.solo .total-money { font-size: 0.82rem; }
+    .total-cta {
+      font-size: 0.72rem; font-weight: 600; padding: 3px 9px;
+      border-radius: 10px; background: #0288D1; color: #fff; white-space: nowrap;
+    }
     .total-vals { display: flex; flex-direction: column; line-height: 1.25; }
     .total-pts { font-size: 0.72rem; color: #E65100; font-weight: 600; }
     .total-money { font-size: 0.72rem; color: #2E7D32; font-weight: 600; }
@@ -3167,6 +3181,14 @@ var ChoreTrackerCardEditor = class extends i4 {
           </span>
           <span class="hint">Members mark chores done, but points are only awarded after an admin approves them in the admin console.</span>
         </label>
+        <label class="check-row">
+          <span class="check-line">
+            <input type="checkbox" id="cfg-scoreboard" .checked=${!!this._config.show_family_totals}
+              @change=${() => this._valueChanged()} />
+            Show everyone's totals at the bottom
+          </span>
+          <span class="hint">Off by default: the footer shows only the selected member's points and money, so siblings can't compare balances. Turn on for a family scoreboard.</span>
+        </label>
         <label>Dashboard URL path (advanced)
           <input id="cfg-urlpath" .value=${this._config.lovelace_url_path || ""} placeholder="auto-detected"
             @input=${() => this._valueChanged()} />
@@ -3186,6 +3208,9 @@ var ChoreTrackerCardEditor = class extends i4 {
     const approval = this.shadowRoot.getElementById("cfg-approval")?.checked;
     if (approval) config.require_approval = true;
     else delete config.require_approval;
+    const scoreboard = this.shadowRoot.getElementById("cfg-scoreboard")?.checked;
+    if (scoreboard) config.show_family_totals = true;
+    else delete config.show_family_totals;
     this._config = config;
     this.dispatchEvent(new CustomEvent("config-changed", {
       detail: { config },

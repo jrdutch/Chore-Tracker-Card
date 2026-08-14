@@ -10,7 +10,7 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 - **Assigned Chores** — Create chores and assign them to one or multiple members
 - **Available Chores pool** — Optional bonus chores members can claim once their own list is done
 - **Points & Allowance** — Assign point values and dollar amounts to each chore; earnings tally automatically
-- **Family Totals** — A scoreboard pinned to the bottom of the card showing everyone's points and money
+- **Private Totals** — The bottom of the card shows only the selected member's points and money, so siblings can't compare balances (an all-members scoreboard is opt-in)
 - **Rewards & Cash Out** — Spend points on a customizable reward catalog, or cash out earned money
 - **Weekly Streak Bonus** — Finish all assigned chores 7 days straight for +5 bonus points
 - **Recurring Chores** — Chores can reset daily, on weekdays (Mon–Fri), or on specific days of the week, at your local midnight
@@ -48,6 +48,7 @@ admin_password: "yourpassword"
 | --- | --- | --- |
 | `title` | `Chore Tracker` | Card title shown in the header |
 | `admin_password` | `1234` | Password for the admin console |
+| `show_family_totals` | `false` | When `true`, the bottom of the card lists every member's points and money. Off by default so only the selected member's totals are visible |
 | `require_approval` | `false` | When `true`, marking a chore adds it to a pending list; an admin approves (awards points) or rejects it in the admin console |
 | `language` | *(HA user language)* | UI language override. Built in: `en`, `es`, `de`, `fr`, `nl`. Follows your HA profile language automatically when unset |
 | `storage_key` | *(auto)* | Stable identity for the card's data. Stamped into the config automatically on first save — don't change it, or the card loses track of its data |
@@ -95,7 +96,7 @@ The `chore_tracker_chore_pending` event fires on each request, so you can send p
 
 ## Rewards, cash out, and streaks
 
-At the bottom of the card, **Family Totals** shows every member's points and money. Tap anyone (or the 🎁 Rewards button on their tab) to open their wallet:
+At the bottom of the card, the totals bar shows the **currently selected member's** points and money — deliberately not everyone's, so siblings aren't nudged into comparing balances. Tap it (or the 🎁 Rewards button on their tab) to open that member's wallet:
 
 - **Redeem Points** — spend points from the reward catalog. Rewards they can't afford yet are greyed out.
 - **Cash Out** — hand over their earned allowance and reset the balance to $0.
@@ -108,6 +109,8 @@ The card ships with a starter reward catalog you can edit, reorder, or replace e
 | Small treats | Pick the car music (10), soda with dinner (15), extra snack (15), 30 min tablet or games (20) | 10–20 |
 | Weekly treats | Extra dessert (30), 20 minutes with Mom or Dad (30), game night pick (35), choose dinner (40), pick the movie (40), stay up 30 min late (45), skip a chore (50) | 30–50 |
 | Big rewards | Pizza / takeout pick (75), ice cream or park outing (120), small toy or $5 trip (150), friend sleepover (175), big day out (200) | 75–200 |
+
+If you'd rather show a family scoreboard, enable **Show everyone's totals at the bottom** in the visual editor (`show_family_totals: true`).
 
 ### Weekly streak bonus
 
