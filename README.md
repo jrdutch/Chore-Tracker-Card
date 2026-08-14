@@ -10,6 +10,9 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 - **Assigned Chores** — Create chores and assign them to one or multiple members
 - **Available Chores pool** — Optional bonus chores members can claim once their own list is done
 - **Points & Allowance** — Assign point values and dollar amounts to each chore; earnings tally automatically
+- **Family Totals** — A scoreboard pinned to the bottom of the card showing everyone's points and money
+- **Rewards & Cash Out** — Spend points on a customizable reward catalog, or cash out earned money
+- **Weekly Streak Bonus** — Finish all assigned chores 7 days straight for +5 bonus points
 - **Recurring Chores** — Chores can reset daily, on weekdays (Mon–Fri), or on specific days of the week, at your local midnight
 - **Automation Events** — Fires events on the HA bus when chores are completed, so you can automate lights, notifications, and payouts
 - **Visual Editor** — Configure title and password right in the dashboard UI editor, no YAML needed
@@ -90,6 +93,30 @@ Turn on **Require admin approval** in the card's visual editor (or set `require_
 
 The `chore_tracker_chore_pending` event fires on each request, so you can send parents a notification to review.
 
+## Rewards, cash out, and streaks
+
+At the bottom of the card, **Family Totals** shows every member's points and money. Tap anyone (or the 🎁 Rewards button on their tab) to open their wallet:
+
+- **Redeem Points** — spend points from the reward catalog. Rewards they can't afford yet are greyed out.
+- **Cash Out** — hand over their earned allowance and reset the balance to $0.
+- Recent redemptions are listed in the wallet, and the full log lives in the admin console's **Rewards** tab.
+
+The card ships with a starter reward catalog you can edit, reorder, or replace entirely in **Admin → Rewards**. Suggested costs assume a typical chore is worth about 5 points:
+
+| Tier | Examples | Points |
+| --- | --- | --- |
+| Small treats | Pick the car music (10), soda with dinner (15), extra snack (15), 30 min tablet or games (20) | 10–20 |
+| Weekly treats | Extra dessert (30), 20 minutes with Mom or Dad (30), game night pick (35), choose dinner (40), pick the movie (40), stay up 30 min late (45), skip a chore (50) | 30–50 |
+| Big rewards | Pizza / takeout pick (75), ice cream or park outing (120), small toy or $5 trip (150), friend sleepover (175), big day out (200) | 75–200 |
+
+### Weekly streak bonus
+
+Completing **all assigned chores** (extras claimed from the pool don't count) every day for 7 days straight earns **+5 bonus points**, and again for each further 7-day run. Current streaks show as a 🔥 chip on the member's tab and in their wallet.
+
+### Points or money on extra chores
+
+An Available Chore that offers **both** points and a dollar value makes the claimer choose one when they claim it — they earn that reward only, never both. Chores offering just one reward type are claimed with no extra step.
+
 ## Available Chores (pool)
 
 The pool holds optional extra chores that members can **claim** — but only after completing **all** of their currently assigned chores. Claiming asks which eligible member is taking the chore and moves it to their personal list.
@@ -106,6 +133,9 @@ The card fires events on the Home Assistant bus that you can use as automation t
 | --- | --- | --- |
 | `chore_tracker_chore_completed` | A chore is completed (or approved, in approval mode) | `member`, `chore`, `points`, `dollars` |
 | `chore_tracker_chore_pending` | A member requests approval for a chore (approval mode) | `member`, `chore` |
+| `chore_tracker_streak_bonus` | A member completes 7 straight perfect days | `member`, `days`, `points` |
+| `chore_tracker_reward_redeemed` | Points spent on a reward | `member`, `reward`, `points`, `points_remaining` |
+| `chore_tracker_cash_out` | Earned money cashed out | `member`, `amount` |
 | `chore_tracker_all_done` | A member finishes their whole list | `member`, `total_points`, `total_dollars` |
 
 Example — flash a light when a kid finishes all their chores:

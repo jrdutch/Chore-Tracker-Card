@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.10.0';
+const CARD_VERSION = '1.11.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -56,10 +56,46 @@ function round2(v) {
   return Math.round(num(v) * 100) / 100;
 }
 
+// localStorage can throw outright (private mode, blocked cookies, kiosk
+// profiles). It's only a cache here, so failures must never break the card.
+function lsGet(key) {
+  try { return localStorage.getItem(key); } catch (_) { return null; }
+}
+function lsSet(key, value) {
+  try { localStorage.setItem(key, value); } catch (_) { /* cache unavailable */ }
+}
+
 function isWeekday() {
   const d = new Date().getDay(); // 0=Sun, 6=Sat
   return d >= 1 && d <= 5;
 }
+
+// Starter reward catalog, seeded on first use. Fully editable in the admin
+// console. Costs assume a typical chore is worth ~5 points, so a kid earning
+// ~20 pts/day can afford a small treat daily and a big reward every week or two.
+const DEFAULT_REWARDS = [
+  { label: 'Pick the music in the car', emoji: '🎵', cost: 10 },
+  { label: 'Soda with dinner', emoji: '🥤', cost: 15 },
+  { label: 'Extra snack of choice', emoji: '🍿', cost: 15 },
+  { label: '30 min extra tablet time', emoji: '📱', cost: 20 },
+  { label: '30 min extra video games', emoji: '🎮', cost: 20 },
+  { label: 'Extra dessert', emoji: '🧁', cost: 30 },
+  { label: '20 minutes with Mom or Dad', emoji: '💛', cost: 30 },
+  { label: 'Pick family game night game', emoji: '🎲', cost: 35 },
+  { label: 'Choose dinner', emoji: '🍽️', cost: 40 },
+  { label: 'Pick the family movie', emoji: '🎬', cost: 40 },
+  { label: 'Stay up 30 minutes late', emoji: '🌙', cost: 45 },
+  { label: 'Skip one chore (free pass)', emoji: '🎟️', cost: 50 },
+  { label: 'Pizza / takeout pick', emoji: '🍕', cost: 75 },
+  { label: 'Ice cream or park outing', emoji: '🍦', cost: 120 },
+  { label: 'Small toy or $5 store trip', emoji: '🎁', cost: 150 },
+  { label: 'Friend sleepover', emoji: '🏕️', cost: 175 },
+  { label: 'Big day out (movies, mini golf, zoo)', emoji: '🎢', cost: 200 },
+];
+
+// Points awarded for completing every assigned chore 7 days straight
+const STREAK_DAYS = 7;
+const STREAK_BONUS_POINTS = 5;
 
 const DEFAULT_CONFIG = {
   title: 'Chore Tracker',
@@ -101,7 +137,11 @@ class ChoreTrackerCard extends LitElement {
       editingChore: null,
       editingMember: null,
       claimingChore: null, // pool chore id being claimed — shows member picker
+      claimingMember: null, // member picked, choosing points vs money
       resettingChore: null, // chore id being reset — shows per-member picker
+      walletMember: null,  // member id whose wallet modal is open
+      walletView: 'menu',  // menu | rewards | cash
+      editingReward: null,
       view: 'main',        // main | admin
     };
     this._initialRenderDone = false;
@@ -195,23 +235,37 @@ class ChoreTrackerCard extends LitElement {
         members: d.members || [],
         chores:  d.chores  || [],
         pool:    d.pool    || [],
+        rewards: d.rewards || [],
+        history: d.history || [],
       };
       console.info(`ChoreTracker v${CARD_VERSION}: loaded data from dashboard config (synced)`);
+      this._seedRewards();
       this._checkRecurrenceResets();
       return;
     }
     // Migration: check localStorage for data written by older versions
     try {
-      const raw = localStorage.getItem(this._storageKey());
+      const raw = lsGet(this._storageKey());
       if (raw) {
         this._data = JSON.parse(raw);
         console.info(`ChoreTracker v${CARD_VERSION}: migrating localStorage data to dashboard config…`);
+        this._seedRewards();
         this._checkRecurrenceResets();
         this._saveData(); // push to lovelace config so all devices see it
         return;
       }
     } catch (_) {}
-    this._data = { members: [], chores: [], pool: [] };
+    this._data = { members: [], chores: [], pool: [], rewards: [], history: [] };
+    this._seedRewards();
+  }
+
+  // Give new installs a starter reward catalog. Only ever runs when the
+  // rewards list is missing entirely — an empty list the user cleared on
+  // purpose stays empty.
+  _seedRewards() {
+    if (!this._data.history) this._data.history = [];
+    if (Array.isArray(this._data.rewards)) return;
+    this._data.rewards = DEFAULT_REWARDS.map(r => ({ id: this._uid(), ...r }));
   }
 
   // Public save entry point. Writes localStorage immediately, then debounces
@@ -219,7 +273,7 @@ class ChoreTrackerCard extends LitElement {
   // into a single save — this also shrinks the window for two devices
   // overwriting each other.
   _saveData() {
-    localStorage.setItem(this._storageKey(), JSON.stringify(this._data));
+    lsSet(this._storageKey(), JSON.stringify(this._data));
     if (!this._hass) return;
     clearTimeout(this._saveTimer);
     // 2.5s debounce: checking off several chores in a row causes ONE
@@ -397,7 +451,7 @@ class ChoreTrackerCard extends LitElement {
       const fresh = JSON.stringify(node.data);
       if (fresh === JSON.stringify(this._data)) return; // nothing new
       this._data = JSON.parse(fresh);
-      localStorage.setItem(this._storageKey(), fresh);
+      lsSet(this._storageKey(), fresh);
       this._checkRecurrenceResets();
       this.requestUpdate();
       console.info(`ChoreTracker v${CARD_VERSION}: refreshed data from another device`);
@@ -473,6 +527,86 @@ class ChoreTrackerCard extends LitElement {
     return chores.length > 0 && chores.every(c => c.completed);
   }
 
+  // Main chores = assigned chores, excluding ones claimed from the pool.
+  // Only these count toward the weekly streak bonus.
+  _getMainChores(memberId) {
+    return this._getMemberChores(memberId).filter(c => !c._poolRef);
+  }
+
+  _allMainChoresDone(memberId) {
+    const chores = this._getMainChores(memberId);
+    return chores.length > 0 && chores.every(c => c.completed);
+  }
+
+  // Length of the run of consecutive perfect days ending on the most recent
+  // one, plus the date that run started. Returns { length, start }.
+  _streakRun(member) {
+    const days = [...new Set(member.perfectDays || [])].sort();
+    if (!days.length) return { length: 0, start: null };
+    let length = 1;
+    let start = days[days.length - 1];
+    for (let i = days.length - 1; i > 0; i--) {
+      const cur = new Date(`${days[i]}T00:00:00`);
+      const prev = new Date(`${days[i - 1]}T00:00:00`);
+      if (Math.round((cur - prev) / 86400000) !== 1) break;
+      length++;
+      start = days[i - 1];
+    }
+    return { length, start };
+  }
+
+  _streakInfo(member) {
+    const run = this._streakRun(member);
+    const today = todayStr();
+    const days = member.perfectDays || [];
+    // A run only counts as "live" if it includes today or yesterday
+    const last = run.start ? [...days].sort().pop() : null;
+    const stale = last && Math.round(
+      (new Date(`${today}T00:00:00`) - new Date(`${last}T00:00:00`)) / 86400000) > 1;
+    return { length: stale ? 0 : run.length, toGo: STREAK_DAYS - ((stale ? 0 : run.length) % STREAK_DAYS) };
+  }
+
+  // Called whenever a member's completions change. Records today as a perfect
+  // day once all main chores are done, and pays the bonus every STREAK_DAYS
+  // consecutive perfect days.
+  _updateStreak(memberId) {
+    const member = (this._data.members || []).find(m => m.id === memberId);
+    if (!member) return;
+    const today = todayStr();
+    if (!Array.isArray(member.perfectDays)) member.perfectDays = [];
+
+    if (this._allMainChoresDone(memberId)) {
+      if (!member.perfectDays.includes(today)) member.perfectDays.push(today);
+    } else {
+      // Un-checked something — today is no longer perfect
+      member.perfectDays = member.perfectDays.filter(d => d !== today);
+    }
+    // Keep the log bounded
+    member.perfectDays = [...new Set(member.perfectDays)].sort().slice(-120);
+
+    const run = this._streakRun(member);
+    const streak = member.streak || { start: null, awarded: 0 };
+    if (streak.start !== run.start) {
+      // New run — start paying bonuses from scratch
+      streak.start = run.start;
+      streak.awarded = 0;
+    }
+    const due = Math.floor(run.length / STREAK_DAYS);
+    if (due > streak.awarded) {
+      const bonus = (due - streak.awarded) * STREAK_BONUS_POINTS;
+      member.points = num(member.points) + bonus;
+      streak.awarded = due;
+      this._fireHAEvent('chore_tracker_streak_bonus', {
+        member: member.name,
+        days: run.length,
+        points: bonus,
+      });
+    } else if (due < streak.awarded) {
+      streak.awarded = due; // run shortened by an un-check
+    }
+    member.streak = streak;
+  }
+
   _getPoolChores() {
     return (this._data.pool || []).filter(c => !c.claimedBy);
   }
@@ -524,7 +658,7 @@ class ChoreTrackerCard extends LitElement {
           const allDone = total > 0 && done === total;
           return html`
             <button class="member-tab ${activeTab === m.id ? 'active' : ''}"
-              @click=${() => this._setState({ activeTab: m.id, claimingChore: null })}>
+              @click=${() => this._setState({ activeTab: m.id, claimingChore: null, claimingMember: null })}>
               <span class="tab-avatar ${allDone ? 'done' : ''}">${m.avatar || m.name[0].toUpperCase()}</span>
               <span class="tab-name">${m.name}</span>
               ${total > 0 ? html`<span class="tab-badge ${allDone ? 'badge-done' : ''}">${done}/${total}</span>` : nothing}
@@ -532,7 +666,7 @@ class ChoreTrackerCard extends LitElement {
           `;
         })}
         <button class="member-tab ${activeTab === 'pool' ? 'active' : ''}"
-          @click=${() => this._setState({ activeTab: 'pool', claimingChore: null })}>
+          @click=${() => this._setState({ activeTab: 'pool', claimingChore: null, claimingMember: null })}>
           <span class="tab-avatar pool-icon">📋</span>
           <span class="tab-name">${this._t('available_chores')}</span>
           ${poolCount > 0 ? html`<span class="tab-badge">${poolCount}</span>` : nothing}
@@ -541,8 +675,176 @@ class ChoreTrackerCard extends LitElement {
       <div class="tab-content">
         ${activeTab === 'pool' ? this._renderPool() : this._renderMemberPanel(activeTab)}
       </div>
+      ${this._renderTotalsFooter()}
       ${this._state.claimingChore ? this._renderClaimModal() : nothing}
+      ${this._state.walletMember ? this._renderWalletModal() : nothing}
     `;
+  }
+
+  // Family scoreboard pinned to the bottom of the card. Tapping anyone opens
+  // their wallet (redeem points / cash out money).
+  _renderTotalsFooter() {
+    const members = this._data.members || [];
+    if (!members.length) return nothing;
+    return html`
+      <div class="totals-footer">
+        <div class="totals-label">${this._t('totals')}</div>
+        <div class="totals-row">
+          ${members.map(m => html`
+            <button class="total-chip" @click=${() => this._setState({ walletMember: m.id, walletView: 'menu' })}>
+              <span class="total-avatar">${m.avatar || m.name[0].toUpperCase()}</span>
+              <span class="total-name">${m.name}</span>
+              <span class="total-vals">
+                <span class="total-pts">⭐ ${num(m.points)}</span>
+                <span class="total-money">💵 $${num(m.dollars).toFixed(2)}</span>
+              </span>
+            </button>
+          `)}
+        </div>
+      </div>
+    `;
+  }
+
+  _renderWalletModal() {
+    const m = (this._data.members || []).find(x => x.id === this._state.walletMember);
+    if (!m) return nothing;
+    const close = () => this._setState({ walletMember: null, walletView: 'menu' });
+    const view = this._state.walletView || 'menu';
+    const points = num(m.points);
+    const dollars = num(m.dollars);
+
+    if (view === 'rewards') {
+      const rewards = this._data.rewards || [];
+      return html`
+        <div class="modal-overlay" @click=${close}>
+          <div class="modal wide-modal" @click=${e => e.stopPropagation()}>
+            <div class="modal-title">🎁 ${this._t('redeem_points')}</div>
+            <div class="modal-subtitle">${this._t('balance_points', { name: m.name, points })}</div>
+            <div class="rewards-list">
+              ${rewards.length ? rewards.map(r => {
+                const afford = points >= num(r.cost);
+                return html`
+                  <button class="reward-row ${afford ? '' : 'locked'}" ?disabled=${!afford}
+                    @click=${() => this._redeemReward(m.id, r.id)}>
+                    <span class="reward-emoji">${r.emoji || '🎁'}</span>
+                    <span class="reward-label">${r.label}</span>
+                    <span class="reward-cost">⭐ ${num(r.cost)}</span>
+                  </button>
+                `;
+              }) : html`<div class="empty">${this._t('no_rewards')}</div>`}
+            </div>
+            <button class="secondary-btn" @click=${() => this._setState({ walletView: 'menu' })}>${this._t('back')}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (view === 'cash') {
+      return html`
+        <div class="modal-overlay" @click=${close}>
+          <div class="modal" @click=${e => e.stopPropagation()}>
+            <div class="modal-title">💵 ${this._t('cash_out')}</div>
+            <div class="modal-subtitle">${this._t('cash_out_confirm', { name: m.name, amount: dollars.toFixed(2) })}</div>
+            <div class="form-actions">
+              <button class="primary-btn" ?disabled=${dollars <= 0}
+                @click=${() => this._cashOut(m.id)}>${this._t('cash_out_do', { amount: dollars.toFixed(2) })}</button>
+              <button class="secondary-btn" @click=${() => this._setState({ walletView: 'menu' })}>${this._t('back')}</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const streak = this._streakInfo(m);
+    return html`
+      <div class="modal-overlay" @click=${close}>
+        <div class="modal" @click=${e => e.stopPropagation()}>
+          <div class="modal-title">
+            <span class="modal-avatar inline-av">${m.avatar || m.name[0].toUpperCase()}</span> ${m.name}
+          </div>
+          <div class="wallet-balances">
+            <div class="wallet-bal"><div class="wallet-num">⭐ ${points}</div><div class="wallet-cap">${this._t('pts')}</div></div>
+            <div class="wallet-bal"><div class="wallet-num">💵 $${dollars.toFixed(2)}</div><div class="wallet-cap">${this._t('earned')}</div></div>
+          </div>
+          <div class="streak-line">
+            ${streak.length > 0
+              ? html`🔥 ${this._t('streak_days', { days: streak.length })} · ${this._t('streak_to_go', { n: streak.toGo, points: STREAK_BONUS_POINTS })}`
+              : html`🔥 ${this._t('streak_none', { days: STREAK_DAYS, points: STREAK_BONUS_POINTS })}`}
+          </div>
+          <div class="modal-members">
+            <button class="modal-member-btn" @click=${() => this._setState({ walletView: 'rewards' })}>
+              <span class="modal-avatar points-av">🎁</span>
+              <span class="modal-member-name">${this._t('redeem_points')}</span>
+            </button>
+            <button class="modal-member-btn" ?disabled=${dollars <= 0} @click=${() => this._setState({ walletView: 'cash' })}>
+              <span class="modal-avatar money-av">💵</span>
+              <span class="modal-member-name">${this._t('cash_out')}</span>
+            </button>
+          </div>
+          ${this._renderMemberHistory(m.id)}
+          <button class="secondary-btn" @click=${close}>${this._t('cancel')}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderMemberHistory(memberId) {
+    const rows = (this._data.history || []).filter(h => h.memberId === memberId).slice(-5).reverse();
+    if (!rows.length) return nothing;
+    return html`
+      <div class="history-block">
+        <div class="section-label">${this._t('recent_activity')}</div>
+        ${rows.map(h => html`
+          <div class="history-row">
+            <span>${h.emoji || (h.type === 'cash' ? '💵' : '🎁')} ${h.label}</span>
+            <span class="history-cost">${h.type === 'cash' ? `-$${num(h.dollars).toFixed(2)}` : `-⭐${num(h.points)}`}</span>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  _logHistory(entry) {
+    if (!Array.isArray(this._data.history)) this._data.history = [];
+    this._data.history.push({ id: this._uid(), date: todayStr(), ...entry });
+    // Keep the log from growing without bound
+    if (this._data.history.length > 200) {
+      this._data.history = this._data.history.slice(-200);
+    }
+  }
+
+  _redeemReward(memberId, rewardId) {
+    const member = (this._data.members || []).find(m => m.id === memberId);
+    const reward = (this._data.rewards || []).find(r => r.id === rewardId);
+    if (!member || !reward) return;
+    const cost = num(reward.cost);
+    if (num(member.points) < cost) return;
+
+    member.points = num(member.points) - cost;
+    this._logHistory({
+      memberId, type: 'reward', label: reward.label, emoji: reward.emoji, points: cost,
+    });
+    this._fireHAEvent('chore_tracker_reward_redeemed', {
+      member: member.name, reward: reward.label, points: cost,
+      points_remaining: num(member.points),
+    });
+    this._saveData();
+    this._setState({ walletView: 'menu' });
+  }
+
+  _cashOut(memberId) {
+    const member = (this._data.members || []).find(m => m.id === memberId);
+    if (!member) return;
+    const amount = round2(member.dollars);
+    if (amount <= 0) return;
+
+    member.dollars = 0;
+    this._logHistory({
+      memberId, type: 'cash', label: this._t('cash_out'), emoji: '💵', dollars: amount,
+    });
+    this._fireHAEvent('chore_tracker_cash_out', { member: member.name, amount });
+    this._saveData();
+    this._setState({ walletView: 'menu' });
   }
 
   _renderMemberPanel(memberId) {
@@ -565,6 +867,11 @@ class ChoreTrackerCard extends LitElement {
             <div class="summary-stats">
               <span class="stat-chip">⭐ ${m.points || 0} ${this._t('pts')}</span>
               <span class="stat-chip">💵 $${num(m.dollars).toFixed(2)}</span>
+              ${this._streakInfo(m).length > 0
+                ? html`<span class="stat-chip streak-chip">🔥 ${this._streakInfo(m).length}</span>` : nothing}
+              <button class="wallet-btn" @click=${() => this._setState({ walletMember: m.id, walletView: 'menu' })}>
+                🎁 ${this._t('rewards')}
+              </button>
             </div>
           </div>
         </div>
@@ -658,10 +965,37 @@ class ChoreTrackerCard extends LitElement {
     const choreId = this._state.claimingChore;
     const chore = (this._data.pool || []).find(c => c.id === choreId);
     if (!chore) return nothing;
-    const eligibles = this._eligibleClaimers();
+    const close = () => this._setState({ claimingChore: null, claimingMember: null });
+    const memberId = this._state.claimingMember;
 
+    // Step 2: this chore offers points AND money — pick one
+    if (memberId) {
+      const m = (this._data.members || []).find(x => x.id === memberId);
+      return html`
+        <div class="modal-overlay" @click=${close}>
+          <div class="modal" @click=${e => e.stopPropagation()}>
+            <div class="modal-title">${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}</div>
+            <div class="modal-subtitle">${this._t('pick_reward', { name: m ? m.name : '' })}</div>
+            <div class="modal-members">
+              <button class="modal-member-btn reward-choice" @click=${() => this._claimChore(choreId, memberId, 'points')}>
+                <span class="modal-avatar points-av">⭐</span>
+                <span class="modal-member-name">${num(chore.points)} ${this._t('pts')}</span>
+              </button>
+              <button class="modal-member-btn reward-choice" @click=${() => this._claimChore(choreId, memberId, 'dollars')}>
+                <span class="modal-avatar money-av">💵</span>
+                <span class="modal-member-name">$${num(chore.dollars).toFixed(2)}</span>
+              </button>
+            </div>
+            <button class="secondary-btn" @click=${() => this._setState({ claimingMember: null })}>${this._t('back')}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Step 1: who is claiming it
+    const eligibles = this._eligibleClaimers();
     return html`
-      <div class="modal-overlay" @click=${() => this._setState({ claimingChore: null })}>
+      <div class="modal-overlay" @click=${close}>
         <div class="modal" @click=${e => e.stopPropagation()}>
           <div class="modal-title">${this._t('assign')} "${chore.emoji || getChoreEmoji(chore.title)} ${chore.title}"</div>
           <div class="modal-subtitle">${this._t('who_claiming')}</div>
@@ -673,7 +1007,7 @@ class ChoreTrackerCard extends LitElement {
               </button>
             `)}
           </div>
-          <button class="secondary-btn" @click=${() => this._setState({ claimingChore: null })}>${this._t('cancel')}</button>
+          <button class="secondary-btn" @click=${close}>${this._t('cancel')}</button>
         </div>
       </div>
     `;
@@ -691,10 +1025,13 @@ class ChoreTrackerCard extends LitElement {
         <button class="icon-btn" title="Lock" @click=${() => this._setState({ view: 'main', adminUnlocked: false, resettingChore: null })}>🔒</button>
       </div>
       <div class="tab-bar admin-tabs">
-        ${['chores', 'members', 'pool'].map(t => html`
+        ${['chores', 'members', 'pool', 'rewards'].map(t => html`
           <button class="member-tab ${tab === t ? 'active' : ''}"
-            @click=${() => this._setState({ adminTab: t, editingChore: null, editingMember: null, resettingChore: null })}>
-            ${t === 'chores' ? this._t('chores') : t === 'members' ? this._t('members') : this._t('available_chores')}
+            @click=${() => this._setState({ adminTab: t, editingChore: null, editingMember: null, resettingChore: null, editingReward: null })}>
+            ${t === 'chores' ? this._t('chores')
+              : t === 'members' ? this._t('members')
+              : t === 'pool' ? this._t('available_chores')
+              : this._t('rewards')}
           </button>
         `)}
       </div>
@@ -702,6 +1039,7 @@ class ChoreTrackerCard extends LitElement {
         ${tab === 'chores' ? this._renderAdminChores() : nothing}
         ${tab === 'members' ? this._renderAdminMembers() : nothing}
         ${tab === 'pool' ? this._renderAdminPool() : nothing}
+        ${tab === 'rewards' ? this._renderAdminRewards() : nothing}
       </div>
       ${this._state.resettingChore ? this._renderResetModal() : nothing}
     `;
@@ -1059,6 +1397,93 @@ class ChoreTrackerCard extends LitElement {
     `;
   }
 
+  _renderAdminRewards() {
+    const rewards = this._data.rewards || [];
+    const editing = this._state.editingReward;
+
+    if (editing !== null) {
+      const isNew = editing === 'new';
+      const r = isNew ? { label: '', emoji: '', cost: 10 } : rewards.find(x => x.id === editing) || {};
+      return html`
+        <div class="edit-form">
+          <div class="form-title">${isNew ? this._t('add_reward') : this._t('edit_reward')}</div>
+          <label>${this._t('title')}</label>
+          <input class="form-input" id="er-label" .value=${r.label || ''} placeholder=${this._t('reward_name')} />
+          <label>${this._t('emoji_optional')}</label>
+          <input class="form-input" id="er-emoji" .value=${r.emoji || ''} placeholder="🎁" />
+          <label>${this._t('cost_points')}</label>
+          <input class="form-input" id="er-cost" type="number" min="0" .value=${String(num(r.cost))} />
+          <div class="form-actions">
+            <button class="primary-btn" @click=${() => this._saveReward(editing)}>${this._t('save')}</button>
+            <button class="secondary-btn" @click=${() => this._setState({ editingReward: null })}>${this._t('cancel')}</button>
+            ${!isNew ? this._dangerBtn(`del-reward:${editing}`, this._t('delete'), () => this._deleteReward(editing)) : nothing}
+          </div>
+        </div>
+      `;
+    }
+
+    const history = [...(this._data.history || [])].slice(-15).reverse();
+    return html`
+      <div class="admin-section">
+        <button class="primary-btn full-btn" @click=${() => this._setState({ editingReward: 'new' })}>+ ${this._t('add_reward')}</button>
+        ${rewards.map(r => html`
+          <div class="admin-item">
+            <span class="chore-emoji">${r.emoji || '🎁'}</span>
+            <div class="admin-item-info">
+              <div class="admin-item-title">${r.label}</div>
+              <div class="admin-item-meta">⭐ ${num(r.cost)} ${this._t('pts')}</div>
+            </div>
+            <div class="admin-item-actions">
+              <button class="icon-btn dark move-btn" ?disabled=${rewards[0]?.id === r.id}
+                @click=${() => this._moveItem(this._data.rewards, r.id, -1)}>▲</button>
+              <button class="icon-btn dark move-btn" ?disabled=${rewards[rewards.length - 1]?.id === r.id}
+                @click=${() => this._moveItem(this._data.rewards, r.id, 1)}>▼</button>
+              <button class="icon-btn dark" @click=${() => this._setState({ editingReward: r.id })}>✏️</button>
+            </div>
+          </div>
+        `)}
+        ${rewards.length === 0 ? html`<div class="empty">${this._t('no_rewards')}</div>` : nothing}
+
+        <div class="section-label">${this._t('redemption_history')}</div>
+        ${history.length ? history.map(h => {
+          const member = (this._data.members || []).find(m => m.id === h.memberId);
+          return html`
+            <div class="admin-item">
+              <span class="chore-emoji">${h.emoji || (h.type === 'cash' ? '💵' : '🎁')}</span>
+              <div class="admin-item-info">
+                <div class="admin-item-title">${h.label}</div>
+                <div class="admin-item-meta">${member ? member.name : this._t('unknown')} · ${h.date}</div>
+              </div>
+              <span class="reward-cost">${h.type === 'cash' ? `-$${num(h.dollars).toFixed(2)}` : `-⭐${num(h.points)}`}</span>
+            </div>
+          `;
+        }) : html`<div class="empty-inline pending-empty">${this._t('no_history')}</div>`}
+      </div>
+    `;
+  }
+
+  _saveReward(editing) {
+    const label = this.shadowRoot.getElementById('er-label')?.value?.trim();
+    if (!label) return;
+    const emoji = this.shadowRoot.getElementById('er-emoji')?.value?.trim() || '';
+    const cost = Math.max(0, Math.round(num(this.shadowRoot.getElementById('er-cost')?.value)));
+    if (!Array.isArray(this._data.rewards)) this._data.rewards = [];
+    if (editing === 'new') {
+      this._data.rewards.push({ id: this._uid(), label, emoji, cost });
+    } else {
+      const r = this._data.rewards.find(x => x.id === editing);
+      if (r) Object.assign(r, { label, emoji, cost });
+    }
+    this._saveData();
+    this._setState({ editingReward: null });
+  }
+
+  _deleteReward(id) {
+    this._data.rewards = (this._data.rewards || []).filter(r => r.id !== id);
+    this._saveData();
+    this._setState({ editingReward: null });
+  }
+
   // ─── DATA MUTATIONS ──────────────────────────────────────────────────────
 
   _adminLogin() {
@@ -1132,6 +1557,7 @@ class ChoreTrackerCard extends LitElement {
       }
     }
 
+    this._updateStreak(memberId);
     this._saveData();
     this.requestUpdate();
   }
@@ -1175,6 +1601,7 @@ class ChoreTrackerCard extends LitElement {
         total_dollars: num(member.dollars),
       });
     }
+    this._updateStreak(memberId);
     this._saveData();
     this.requestUpdate();
   }
@@ -1315,18 +1742,29 @@ class ChoreTrackerCard extends LitElement {
     this.requestUpdate();
   }
 
-  _claimChore(choreId, memberId) {
+  // A pool chore that offers both points and money makes the claimer pick
+  // one — they earn that reward only, never both.
+  _claimChore(choreId, memberId, rewardType) {
     const poolChore = (this._data.pool || []).find(c => c.id === choreId);
     if (!poolChore || poolChore.claimedBy) return;
     if (!this._allChoresDone(memberId)) return;
+
+    const hasBoth = num(poolChore.points) > 0 && num(poolChore.dollars) > 0;
+    if (hasBoth && !rewardType) {
+      // Ask which reward they want before committing the claim
+      this._setState({ claimingMember: memberId });
+      return;
+    }
+    const takePoints = hasBoth ? rewardType === 'points' : num(poolChore.points) > 0;
+    const takeDollars = hasBoth ? rewardType === 'dollars' : num(poolChore.dollars) > 0;
 
     if (!this._data.chores) this._data.chores = [];
     this._data.chores.push({
       id: this._uid(),
       title: poolChore.title,
       emoji: poolChore.emoji,
-      points: poolChore.points,
-      dollars: poolChore.dollars,
+      points: takePoints ? num(poolChore.points) : 0,
+      dollars: takeDollars ? num(poolChore.dollars) : 0,
       assignedTo: [memberId],
       memberStates: {},
       recurrence: 'none',
@@ -1335,7 +1773,7 @@ class ChoreTrackerCard extends LitElement {
     poolChore.claimedBy = memberId;
 
     this._saveData();
-    this._setState({ claimingChore: null, activeTab: memberId });
+    this._setState({ claimingChore: null, claimingMember: null, activeTab: memberId });
   }
 
   // ─── STYLES ──────────────────────────────────────────────────────────────
@@ -1547,7 +1985,7 @@ class ChoreTrackerCard extends LitElement {
       display: flex; flex-direction: column; gap: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
-    .modal-title { font-size: 1rem; font-weight: 700; color: #003366; }
+    .modal-title { font-size: 1rem; font-weight: 700; color: var(--primary-text-color, #003366); }
     .modal-subtitle { font-size: 0.83rem; color: var(--secondary-text-color, #666); }
     .modal-members { display: flex; flex-direction: column; gap: 8px; }
     .modal-member-btn {
@@ -1557,7 +1995,7 @@ class ChoreTrackerCard extends LitElement {
       border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
       color: var(--primary-text-color, #333); transition: all 0.2s;
     }
-    .modal-member-btn:hover { border-color: #0288D1; background: rgba(2,136,209,0.06); color: #003366; }
+    .modal-member-btn:hover { border-color: #0288D1; background: rgba(2,136,209,0.06); }
     .modal-member-name { flex: 1; text-align: left; }
     .modal-status { font-size: 1.05rem; }
     .modal-avatar {
@@ -1604,7 +2042,7 @@ class ChoreTrackerCard extends LitElement {
     .admin-item-meta { font-size: 0.74rem; color: var(--secondary-text-color, #777); margin-top: 2px; }
     .admin-item-actions { display: flex; gap: 4px; }
     .edit-form { display: flex; flex-direction: column; gap: 7px; }
-    .form-title { font-size: 1rem; font-weight: 700; color: #003366; margin-bottom: 4px; }
+    .form-title { font-size: 1rem; font-weight: 700; color: var(--primary-text-color, #003366); margin-bottom: 4px; }
     .edit-form label { font-size: 0.78rem; font-weight: 600; color: var(--secondary-text-color, #666); margin-top: 3px; }
     .form-input {
       padding: 8px 11px; border: 1.5px solid var(--divider-color, #ccc);
@@ -1650,6 +2088,93 @@ class ChoreTrackerCard extends LitElement {
       text-align: center; color: var(--secondary-text-color, #999);
       padding: 20px; font-size: 0.88rem;
     }
+
+    /* TOTALS FOOTER */
+    .totals-footer {
+      flex-shrink: 0;
+      border-top: 2px solid #4FC3F7;
+      background: linear-gradient(135deg, rgba(0,51,102,0.06), rgba(79,195,247,0.10));
+      padding: 8px 10px 10px;
+    }
+    .totals-label {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: #0288D1; margin-bottom: 6px;
+    }
+    .totals-row { display: flex; gap: 7px; flex-wrap: wrap; }
+    .total-chip {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--secondary-background-color, #f9f9f9);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 10px; padding: 5px 9px; cursor: pointer;
+      color: var(--primary-text-color, #333); font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .total-chip:hover { border-color: #0288D1; }
+    .total-avatar {
+      width: 26px; height: 26px; flex-shrink: 0;
+      background: linear-gradient(135deg, #003366, #0288D1);
+      color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700;
+    }
+    .total-name { font-size: 0.78rem; font-weight: 600; }
+    .total-vals { display: flex; flex-direction: column; line-height: 1.25; }
+    .total-pts { font-size: 0.72rem; color: #E65100; font-weight: 600; }
+    .total-money { font-size: 0.72rem; color: #2E7D32; font-weight: 600; }
+
+    /* WALLET */
+    .wallet-btn {
+      font-size: 0.72rem; padding: 3px 9px; border-radius: 10px;
+      background: #0288D1; color: #fff; border: none; cursor: pointer;
+      font-weight: 600; font-family: inherit;
+    }
+    .wallet-btn:hover { background: #01579B; }
+    .streak-chip { background: rgba(251,140,0,0.18); color: #E65100; }
+    .wide-modal { max-width: 400px; }
+    .wallet-balances { display: flex; gap: 10px; }
+    .wallet-bal {
+      flex: 1; text-align: center; padding: 10px;
+      background: var(--secondary-background-color, #f5f5f5);
+      border-radius: 10px;
+    }
+    .wallet-num { font-size: 1.15rem; font-weight: 700; }
+    .wallet-cap { font-size: 0.7rem; color: var(--secondary-text-color, #888); }
+    .streak-line {
+      font-size: 0.78rem; color: var(--secondary-text-color, #777);
+      text-align: center;
+    }
+    .inline-av { display: inline-flex; width: 26px; height: 26px; font-size: 0.8rem; vertical-align: middle; }
+    .points-av { background: linear-gradient(135deg, #E65100, #FB8C00); }
+    .money-av { background: linear-gradient(135deg, #1B5E20, #43A047); }
+    .modal-member-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+    .reward-choice { justify-content: flex-start; }
+    .rewards-list {
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: 300px; overflow-y: auto;
+    }
+    .reward-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 11px; cursor: pointer; font-family: inherit;
+      background: var(--secondary-background-color, #f9f9f9);
+      border: 1px solid var(--divider-color, #e8e8e8);
+      border-radius: 10px; color: var(--primary-text-color, #333);
+      text-align: left;
+    }
+    .reward-row:hover:not(.locked) { border-color: #0288D1; background: rgba(2,136,209,0.06); }
+    .reward-row.locked { opacity: 0.42; cursor: not-allowed; }
+    .reward-emoji { font-size: 1.2rem; flex-shrink: 0; }
+    .reward-label { flex: 1; font-size: 0.86rem; font-weight: 500; }
+    .reward-cost {
+      font-size: 0.75rem; font-weight: 700; color: #E65100;
+      background: rgba(255,193,7,0.15); padding: 2px 7px; border-radius: 8px;
+      white-space: nowrap;
+    }
+    .history-block { display: flex; flex-direction: column; gap: 4px; }
+    .history-row {
+      display: flex; justify-content: space-between; gap: 8px;
+      font-size: 0.78rem; color: var(--secondary-text-color, #777);
+    }
+    .history-cost { font-weight: 600; white-space: nowrap; }
   `;
 
   static getStubConfig() {
