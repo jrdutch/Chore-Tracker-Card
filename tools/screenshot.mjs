@@ -181,6 +181,27 @@ await page.waitForTimeout(300);
 await card.screenshot({ path: join(outDir, '06-admin-rewards.png') });
 shots.push('06-admin-rewards.png');
 
+// Light theme pass — the empty checkbox and text must read on both
+await page.evaluate(() => {
+  const el = document.querySelector('chore-tracker-card');
+  el._state.view = 'main';
+  el._state.activeTab = 'm4';
+  el.requestUpdate();
+  document.body.style.background = '#f2f4f7';
+  const r = document.documentElement.style;
+  r.setProperty('--primary-text-color', '#212121');
+  r.setProperty('--secondary-text-color', '#727272');
+  r.setProperty('--card-background-color', '#ffffff');
+  r.setProperty('--secondary-background-color', '#f5f5f5');
+  r.setProperty('--divider-color', '#e0e0e0');
+  r.setProperty('--ha-card-background', '#ffffff');
+  document.querySelector('style').textContent += `
+    ha-card { background:#fff !important; color:#212121 !important; }`;
+});
+await page.waitForTimeout(400);
+await card.screenshot({ path: join(outDir, '07-light-theme.png') });
+shots.push('07-light-theme.png');
+
 await browser.close();
 
 console.log('Screenshots written to tools/shots:');

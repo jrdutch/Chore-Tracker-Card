@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.12.1';
+const CARD_VERSION = '1.13.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -1802,7 +1802,7 @@ class ChoreTrackerCard extends LitElement {
     .header, .tab-bar, .sync-banner { flex-shrink: 0; }
     .sync-banner {
       background: #B71C1C; color: #fff;
-      padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
+      padding: 7px 14px; font-size: 0.86rem; font-weight: 600;
       text-align: center;
     }
     .header {
@@ -1814,15 +1814,15 @@ class ChoreTrackerCard extends LitElement {
       gap: 10px;
       min-height: 50px;
     }
-    .header-title { flex: 1; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
+    .header-title { flex: 1; font-size: 1.16rem; font-weight: 700; letter-spacing: 0.3px; }
     .back-btn {
       background: rgba(255,255,255,0.15); border: none; color: #fff; cursor: pointer;
-      padding: 5px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600;
+      padding: 5px 10px; border-radius: 6px; font-size: 0.9rem; font-weight: 600;
     }
     .back-btn:hover { background: rgba(255,255,255,0.25); }
     .icon-btn {
       background: rgba(255,255,255,0.1); border: none; color: #fff; cursor: pointer;
-      width: 34px; height: 34px; border-radius: 6px; font-size: 1rem;
+      width: 34px; height: 34px; border-radius: 6px; font-size: 1.1rem;
       display: flex; align-items: center; justify-content: center;
     }
     .icon-btn:hover { background: rgba(255,255,255,0.2); }
@@ -1832,7 +1832,7 @@ class ChoreTrackerCard extends LitElement {
     }
     .icon-btn.dark:hover { background: var(--divider-color, #ddd); }
     .icon-btn.dark.armed { background: #c62828; color: #fff; }
-    .move-btn { font-size: 0.7rem; width: 26px; }
+    .move-btn { font-size: 0.77rem; width: 26px; }
     .move-btn:disabled { opacity: 0.3; cursor: default; }
 
     /* TAB BAR */
@@ -1851,7 +1851,7 @@ class ChoreTrackerCard extends LitElement {
       display: flex; flex-direction: column; align-items: center; gap: 2px;
       background: transparent; border: none; cursor: pointer;
       padding: 8px 12px; min-width: 70px;
-      color: rgba(255,255,255,0.7); font-size: 0.72rem; font-weight: 600;
+      color: rgba(255,255,255,0.7); font-size: 0.79rem; font-weight: 600;
       border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap;
     }
     .admin-tabs .member-tab { color: var(--secondary-text-color, #666); }
@@ -1864,23 +1864,23 @@ class ChoreTrackerCard extends LitElement {
       background: linear-gradient(135deg, #0077b6, #4FC3F7);
       color: #fff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
+      font-size: 0.99rem; font-weight: 700; flex-shrink: 0;
       transition: all 0.2s;
     }
     .tab-avatar.done { background: linear-gradient(135deg, #2e7d32, #66bb6a); }
-    .tab-avatar.pool-icon { background: linear-gradient(135deg, #4a148c, #9c27b0); font-size: 1rem; }
+    .tab-avatar.pool-icon { background: linear-gradient(135deg, #4a148c, #9c27b0); font-size: 1.1rem; }
     .small-avatar {
       width: 36px; height: 36px;
       background: linear-gradient(135deg, #003366, #0288D1);
       color: #fff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; font-weight: 700;
+      font-size: 1.1rem; font-weight: 700;
     }
-    .tab-name { font-size: 0.7rem; }
+    .tab-name { font-size: 0.77rem; }
     .tab-badge {
       background: #4FC3F7; color: #003366;
       border-radius: 10px; padding: 1px 6px;
-      font-size: 0.65rem; font-weight: 700; min-width: 20px; text-align: center;
+      font-size: 0.72rem; font-weight: 700; min-width: 20px; text-align: center;
     }
     .tab-badge.badge-done { background: #66bb6a; color: #fff; }
 
@@ -1901,12 +1901,12 @@ class ChoreTrackerCard extends LitElement {
       background: linear-gradient(135deg, #003366, #0288D1);
       color: #fff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; font-weight: 700; flex-shrink: 0;
+      font-size: 1.43rem; font-weight: 700; flex-shrink: 0;
     }
-    .summary-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .summary-name { font-weight: 700; font-size: 1.04rem; margin-bottom: 4px; }
     .summary-stats { display: flex; gap: 6px; flex-wrap: wrap; }
     .stat-chip {
-      font-size: 0.75rem; padding: 2px 8px; border-radius: 10px;
+      font-size: 0.83rem; padding: 2px 8px; border-radius: 10px;
       background: rgba(0,51,102,0.1); color: var(--primary-text-color, #333);
       font-weight: 600;
     }
@@ -1919,7 +1919,7 @@ class ChoreTrackerCard extends LitElement {
       height: 100%; background: linear-gradient(90deg, #4FC3F7, #0288D1);
       border-radius: 4px; transition: width 0.4s ease;
     }
-    .progress-label { font-size: 0.72rem; color: var(--secondary-text-color, #888); }
+    .progress-label { font-size: 0.79rem; color: var(--secondary-text-color, #888); }
 
     /* CHORE LIST */
     .chores-list { display: flex; flex-direction: column; gap: 7px; }
@@ -1932,14 +1932,23 @@ class ChoreTrackerCard extends LitElement {
     }
     .chore-item.completed { opacity: 0.55; background: rgba(67,160,71,0.06); border-color: rgba(67,160,71,0.3); }
     .chore-item.claimed { opacity: 0.6; }
+    /* An empty checkbox has to read clearly against frosted/glass themes,
+       where the theme's divider colour is nearly invisible. Accent border
+       plus a translucent fill works on light and dark backgrounds alike. */
     .chore-check {
-      width: 24px; height: 24px; border: 2px solid var(--divider-color, #bbb);
-      border-radius: 5px; background: transparent; cursor: pointer;
+      width: 30px; height: 30px;
+      border: 2.5px solid #4FC3F7;
+      border-radius: 7px;
+      background: rgba(79,195,247,0.18);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.10), inset 0 1px 2px rgba(255,255,255,0.14);
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem; color: #fff; flex-shrink: 0; transition: all 0.2s;
+      font-size: 1.04rem; color: #fff; flex-shrink: 0; transition: all 0.15s;
     }
+    .chore-check:hover { background: rgba(79,195,247,0.34); border-color: #0288D1; }
+    .chore-check:active { transform: scale(0.92); }
     .chore-check.checked { background: #43A047; border-color: #43A047; }
-    .chore-check.pending { background: #FB8C00; border-color: #FB8C00; font-size: 0.7rem; }
+    .chore-check.pending { background: #FB8C00; border-color: #FB8C00; font-size: 0.77rem; }
     .chore-item.pending { border-color: rgba(251,140,0,0.5); background: rgba(251,140,0,0.06); }
     .pending-label { color: #FB8C00; }
     .pending-item { border-color: rgba(251,140,0,0.5); }
@@ -1951,19 +1960,19 @@ class ChoreTrackerCard extends LitElement {
     .icon-btn.approve:hover { background: #2e7d32; }
     .icon-btn.reject { background: #c62828; color: #fff; }
     .icon-btn.reject:hover { background: #b71c1c; }
-    .chore-emoji { font-size: 1.25rem; flex-shrink: 0; }
+    .chore-emoji { font-size: 1.38rem; flex-shrink: 0; }
     .chore-body { flex: 1; min-width: 0; }
-    .chore-title { font-size: 0.9rem; font-weight: 500; display: block; }
-    .chore-recur { font-size: 0.72rem; color: #0288D1; }
+    .chore-title { font-size: 0.99rem; font-weight: 500; display: block; }
+    .chore-recur { font-size: 0.79rem; color: #0288D1; }
     .chore-rewards { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-    .reward-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; font-weight: 600; }
+    .reward-badge { font-size: 0.77rem; padding: 2px 6px; border-radius: 8px; font-weight: 600; }
     .reward-badge.points { background: rgba(255,193,7,0.15); color: #E65100; }
     .reward-badge.dollars { background: rgba(67,160,71,0.15); color: #2E7D32; }
 
     /* CLAIM BTN */
     .claim-btn {
       padding: 5px 11px; background: #0288D1; color: #fff; border: none;
-      border-radius: 7px; cursor: pointer; font-size: 0.78rem; font-weight: 600;
+      border-radius: 7px; cursor: pointer; font-size: 0.86rem; font-weight: 600;
       flex-shrink: 0; transition: background 0.2s;
     }
     .claim-btn:hover:not(.disabled) { background: #01579B; }
@@ -1971,10 +1980,10 @@ class ChoreTrackerCard extends LitElement {
 
     /* POOL */
     .pool-header { margin-bottom: 10px; }
-    .pool-eligible { font-size: 0.82rem; color: #2e7d32; font-weight: 600; }
-    .pool-none { font-size: 0.82rem; color: var(--secondary-text-color, #888); }
+    .pool-eligible { font-size: 0.9rem; color: #2e7d32; font-weight: 600; }
+    .pool-none { font-size: 0.9rem; color: var(--secondary-text-color, #888); }
     .section-label {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      font-size: 0.79rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 1px; color: #0288D1; margin: 12px 0 6px;
     }
     .claimed-list { opacity: 0.7; }
@@ -1992,25 +2001,25 @@ class ChoreTrackerCard extends LitElement {
       display: flex; flex-direction: column; gap: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
-    .modal-title { font-size: 1rem; font-weight: 700; color: var(--primary-text-color, #003366); }
-    .modal-subtitle { font-size: 0.83rem; color: var(--secondary-text-color, #666); }
+    .modal-title { font-size: 1.1rem; font-weight: 700; color: var(--primary-text-color, #003366); }
+    .modal-subtitle { font-size: 0.91rem; color: var(--secondary-text-color, #666); }
     .modal-members { display: flex; flex-direction: column; gap: 8px; }
     .modal-member-btn {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 14px; background: var(--secondary-background-color, #f5f5f5);
       border: 1.5px solid var(--divider-color, #ddd);
-      border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
+      border-radius: 10px; cursor: pointer; font-size: 0.99rem; font-weight: 600;
       color: var(--primary-text-color, #333); transition: all 0.2s;
     }
     .modal-member-btn:hover { border-color: #0288D1; background: rgba(2,136,209,0.06); }
     .modal-member-name { flex: 1; text-align: left; }
-    .modal-status { font-size: 1.05rem; }
+    .modal-status { font-size: 1.16rem; }
     .modal-avatar {
       width: 36px; height: 36px;
       background: linear-gradient(135deg, #003366, #0288D1);
       color: #fff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; font-weight: 700;
+      font-size: 1.1rem; font-weight: 700;
     }
 
     /* CLAIM BANNER */
@@ -2018,7 +2027,7 @@ class ChoreTrackerCard extends LitElement {
       margin-top: 12px; padding: 11px 14px;
       background: linear-gradient(135deg, #43A047, #1B5E20);
       color: #fff; border-radius: 10px; cursor: pointer;
-      font-size: 0.88rem; font-weight: 600; text-align: center;
+      font-size: 0.97rem; font-weight: 600; text-align: center;
     }
     .claim-banner:hover { opacity: 0.9; }
 
@@ -2027,16 +2036,16 @@ class ChoreTrackerCard extends LitElement {
       display: flex; flex-direction: column; align-items: center;
       gap: 14px; padding: 32px 24px;
     }
-    .login-icon { font-size: 2.8rem; }
-    .login-title { font-size: 1rem; font-weight: 700; }
+    .login-icon { font-size: 3.08rem; }
+    .login-title { font-size: 1.1rem; font-weight: 700; }
     .admin-input {
       width: 100%; max-width: 240px; padding: 10px 14px;
       border: 1.5px solid var(--divider-color, #ccc); border-radius: 8px;
-      font-size: 1rem; background: var(--card-background-color, #fff);
+      font-size: 1.1rem; background: var(--card-background-color, #fff);
       color: var(--primary-text-color, #333); text-align: center;
     }
     .admin-input:focus { border-color: #0288D1; outline: none; }
-    .login-error { color: #c62828; font-size: 0.82rem; min-height: 16px; }
+    .login-error { color: #c62828; font-size: 0.9rem; min-height: 16px; }
     .admin-section { display: flex; flex-direction: column; gap: 8px; }
     .admin-item {
       display: flex; align-items: center; gap: 10px;
@@ -2045,15 +2054,15 @@ class ChoreTrackerCard extends LitElement {
       border-radius: 10px; padding: 9px 11px;
     }
     .admin-item-info { flex: 1; min-width: 0; }
-    .admin-item-title { font-size: 0.88rem; font-weight: 600; }
-    .admin-item-meta { font-size: 0.74rem; color: var(--secondary-text-color, #777); margin-top: 2px; }
+    .admin-item-title { font-size: 0.97rem; font-weight: 600; }
+    .admin-item-meta { font-size: 0.81rem; color: var(--secondary-text-color, #777); margin-top: 2px; }
     .admin-item-actions { display: flex; gap: 4px; }
     .edit-form { display: flex; flex-direction: column; gap: 7px; }
-    .form-title { font-size: 1rem; font-weight: 700; color: var(--primary-text-color, #003366); margin-bottom: 4px; }
-    .edit-form label { font-size: 0.78rem; font-weight: 600; color: var(--secondary-text-color, #666); margin-top: 3px; }
+    .form-title { font-size: 1.1rem; font-weight: 700; color: var(--primary-text-color, #003366); margin-bottom: 4px; }
+    .edit-form label { font-size: 0.86rem; font-weight: 600; color: var(--secondary-text-color, #666); margin-top: 3px; }
     .form-input {
       padding: 8px 11px; border: 1.5px solid var(--divider-color, #ccc);
-      border-radius: 7px; font-size: 0.88rem;
+      border-radius: 7px; font-size: 0.97rem;
       background: var(--card-background-color, #fff); color: var(--primary-text-color, #333);
       width: 100%;
     }
@@ -2061,39 +2070,39 @@ class ChoreTrackerCard extends LitElement {
     select.form-input { cursor: pointer; }
     .assign-list { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0; }
     .assign-item {
-      display: flex; align-items: center; gap: 6px; font-size: 0.84rem;
+      display: flex; align-items: center; gap: 6px; font-size: 0.92rem;
       cursor: pointer; padding: 5px 10px;
       background: var(--secondary-background-color, #f5f5f5);
       border-radius: 7px; border: 1px solid var(--divider-color, #e0e0e0);
     }
-    .empty-inline { font-size: 0.82rem; color: var(--secondary-text-color, #999); }
+    .empty-inline { font-size: 0.9rem; color: var(--secondary-text-color, #999); }
     .form-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
     .member-totals {
       display: flex; gap: 16px; padding: 9px 12px;
       background: var(--secondary-background-color, #f5f5f5);
-      border-radius: 7px; font-size: 0.85rem; font-weight: 600;
+      border-radius: 7px; font-size: 0.94rem; font-weight: 600;
     }
     .primary-btn {
       padding: 8px 16px; background: #003366; color: #fff; border: none;
-      border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      border-radius: 7px; cursor: pointer; font-size: 0.94rem; font-weight: 600;
     }
     .primary-btn:hover { background: #01579B; }
     .full-btn { width: 100%; }
     .secondary-btn {
       padding: 8px 16px; background: var(--secondary-background-color, #f5f5f5);
       color: var(--primary-text-color, #333); border: 1.5px solid var(--divider-color, #ccc);
-      border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      border-radius: 7px; cursor: pointer; font-size: 0.94rem; font-weight: 600;
     }
     .secondary-btn:hover { background: var(--hover-color, #e5e5e5); }
     .danger-btn {
       padding: 8px 16px; background: #c62828; color: #fff; border: none;
-      border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      border-radius: 7px; cursor: pointer; font-size: 0.94rem; font-weight: 600;
     }
     .danger-btn:hover { background: #b71c1c; }
     .danger-btn.armed { background: #8b0000; outline: 2px solid #ff8a80; }
     .empty {
       text-align: center; color: var(--secondary-text-color, #999);
-      padding: 20px; font-size: 0.88rem;
+      padding: 20px; font-size: 0.97rem;
     }
 
     /* TOTALS FOOTER */
@@ -2104,7 +2113,7 @@ class ChoreTrackerCard extends LitElement {
       padding: 8px 10px 10px;
     }
     .totals-label {
-      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 1px; color: #0288D1; margin-bottom: 6px;
     }
     .totals-row { display: flex; gap: 7px; flex-wrap: wrap; }
@@ -2122,24 +2131,24 @@ class ChoreTrackerCard extends LitElement {
       background: linear-gradient(135deg, #003366, #0288D1);
       color: #fff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem; font-weight: 700;
+      font-size: 0.88rem; font-weight: 700;
     }
-    .total-name { font-size: 0.78rem; font-weight: 600; }
+    .total-name { font-size: 0.86rem; font-weight: 600; }
     .total-chip.solo { width: 100%; gap: 10px; padding: 7px 11px; }
-    .total-chip.solo .total-name { flex: 1; text-align: left; font-size: 0.85rem; }
+    .total-chip.solo .total-name { flex: 1; text-align: left; font-size: 0.94rem; }
     .total-chip.solo .total-vals { flex-direction: row; gap: 10px; align-items: center; }
-    .total-chip.solo .total-pts, .total-chip.solo .total-money { font-size: 0.82rem; }
+    .total-chip.solo .total-pts, .total-chip.solo .total-money { font-size: 0.9rem; }
     .total-cta {
-      font-size: 0.72rem; font-weight: 600; padding: 3px 9px;
+      font-size: 0.79rem; font-weight: 600; padding: 3px 9px;
       border-radius: 10px; background: #0288D1; color: #fff; white-space: nowrap;
     }
     .total-vals { display: flex; flex-direction: column; line-height: 1.25; }
-    .total-pts { font-size: 0.72rem; color: #E65100; font-weight: 600; }
-    .total-money { font-size: 0.72rem; color: #2E7D32; font-weight: 600; }
+    .total-pts { font-size: 0.79rem; color: #E65100; font-weight: 600; }
+    .total-money { font-size: 0.79rem; color: #2E7D32; font-weight: 600; }
 
     /* WALLET */
     .wallet-btn {
-      font-size: 0.72rem; padding: 3px 9px; border-radius: 10px;
+      font-size: 0.79rem; padding: 3px 9px; border-radius: 10px;
       background: #0288D1; color: #fff; border: none; cursor: pointer;
       font-weight: 600; font-family: inherit;
     }
@@ -2152,13 +2161,13 @@ class ChoreTrackerCard extends LitElement {
       background: var(--secondary-background-color, #f5f5f5);
       border-radius: 10px;
     }
-    .wallet-num { font-size: 1.15rem; font-weight: 700; }
-    .wallet-cap { font-size: 0.7rem; color: var(--secondary-text-color, #888); }
+    .wallet-num { font-size: 1.26rem; font-weight: 700; }
+    .wallet-cap { font-size: 0.77rem; color: var(--secondary-text-color, #888); }
     .streak-line {
-      font-size: 0.78rem; color: var(--secondary-text-color, #777);
+      font-size: 0.86rem; color: var(--secondary-text-color, #777);
       text-align: center;
     }
-    .inline-av { display: inline-flex; width: 26px; height: 26px; font-size: 0.8rem; vertical-align: middle; }
+    .inline-av { display: inline-flex; width: 26px; height: 26px; font-size: 0.88rem; vertical-align: middle; }
     .points-av { background: linear-gradient(135deg, #E65100, #FB8C00); }
     .money-av { background: linear-gradient(135deg, #1B5E20, #43A047); }
     .modal-member-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
@@ -2177,17 +2186,17 @@ class ChoreTrackerCard extends LitElement {
     }
     .reward-row:hover:not(.locked) { border-color: #0288D1; background: rgba(2,136,209,0.06); }
     .reward-row.locked { opacity: 0.42; cursor: not-allowed; }
-    .reward-emoji { font-size: 1.2rem; flex-shrink: 0; }
-    .reward-label { flex: 1; font-size: 0.86rem; font-weight: 500; }
+    .reward-emoji { font-size: 1.32rem; flex-shrink: 0; }
+    .reward-label { flex: 1; font-size: 0.95rem; font-weight: 500; }
     .reward-cost {
-      font-size: 0.75rem; font-weight: 700; color: #E65100;
+      font-size: 0.83rem; font-weight: 700; color: #E65100;
       background: rgba(255,193,7,0.15); padding: 2px 7px; border-radius: 8px;
       white-space: nowrap;
     }
     .history-block { display: flex; flex-direction: column; gap: 4px; }
     .history-row {
       display: flex; justify-content: space-between; gap: 8px;
-      font-size: 0.78rem; color: var(--secondary-text-color, #777);
+      font-size: 0.86rem; color: var(--secondary-text-color, #777);
     }
     .history-cost { font-weight: 600; white-space: nowrap; }
   `;
@@ -2220,14 +2229,14 @@ class ChoreTrackerCard extends LitElement {
 class ChoreTrackerCardEditor extends LitElement {
   static styles = css`
     .editor { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: 500; color: var(--primary-text-color); }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 0.94rem; font-weight: 500; color: var(--primary-text-color); }
     input {
       padding: 10px 12px; border: 1px solid var(--divider-color, #ccc);
-      border-radius: 6px; font-size: 0.95rem;
+      border-radius: 6px; font-size: 1.04rem;
       background: var(--card-background-color, #fff); color: var(--primary-text-color, #333);
     }
     input:focus { border-color: #0288D1; outline: none; }
-    .hint { font-size: 0.75rem; font-weight: 400; color: var(--secondary-text-color, #888); }
+    .hint { font-size: 0.83rem; font-weight: 400; color: var(--secondary-text-color, #888); }
     .check-line { display: flex; align-items: center; gap: 8px; flex-direction: row; }
     .check-line input { width: auto; }
   `;
