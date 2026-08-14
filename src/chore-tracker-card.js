@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.12.0';
+const CARD_VERSION = '1.12.1';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -875,15 +875,11 @@ class ChoreTrackerCard extends LitElement {
           <div class="summary-avatar">${m.avatar || m.name[0].toUpperCase()}</div>
           <div>
             <div class="summary-name">${m.name}</div>
-            <div class="summary-stats">
-              <span class="stat-chip">⭐ ${m.points || 0} ${this._t('pts')}</span>
-              <span class="stat-chip">💵 $${num(m.dollars).toFixed(2)}</span>
-              ${this._streakInfo(m).length > 0
-                ? html`<span class="stat-chip streak-chip">🔥 ${this._streakInfo(m).length}</span>` : nothing}
-              <button class="wallet-btn" @click=${() => this._setState({ walletMember: m.id, walletView: 'menu' })}>
-                🎁 ${this._t('rewards')}
-              </button>
-            </div>
+            ${this._streakInfo(m).length > 0 ? html`
+              <div class="summary-stats">
+                <span class="stat-chip streak-chip">🔥 ${this._t('streak_days', { days: this._streakInfo(m).length })}</span>
+              </div>
+            ` : nothing}
           </div>
         </div>
         <div class="summary-progress">

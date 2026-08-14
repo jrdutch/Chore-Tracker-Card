@@ -1027,7 +1027,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.12.0";
+var CARD_VERSION = "1.12.1";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1870,14 +1870,11 @@ var ChoreTrackerCard = class extends i4 {
           <div class="summary-avatar">${m2.avatar || m2.name[0].toUpperCase()}</div>
           <div>
             <div class="summary-name">${m2.name}</div>
-            <div class="summary-stats">
-              <span class="stat-chip">⭐ ${m2.points || 0} ${this._t("pts")}</span>
-              <span class="stat-chip">💵 $${num(m2.dollars).toFixed(2)}</span>
-              ${this._streakInfo(m2).length > 0 ? b2`<span class="stat-chip streak-chip">🔥 ${this._streakInfo(m2).length}</span>` : A}
-              <button class="wallet-btn" @click=${() => this._setState({ walletMember: m2.id, walletView: "menu" })}>
-                🎁 ${this._t("rewards")}
-              </button>
-            </div>
+            ${this._streakInfo(m2).length > 0 ? b2`
+              <div class="summary-stats">
+                <span class="stat-chip streak-chip">🔥 ${this._t("streak_days", { days: this._streakInfo(m2).length })}</span>
+              </div>
+            ` : A}
           </div>
         </div>
         <div class="summary-progress">
