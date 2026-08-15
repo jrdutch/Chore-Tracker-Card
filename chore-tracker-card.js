@@ -576,7 +576,7 @@ var TRANSLATIONS = {
     recur_none: "One-time / No reset",
     recur_daily: "Daily (resets every day)",
     recur_weekdays: "Weekdays (Mon\u2013Fri)",
-    recur_weekly: "Weekly (pick days)",
+    recur_weekly: "Only on chosen days",
     daily: "Daily",
     weekdays: "Weekdays",
     weekly: "Weekly",
@@ -592,6 +592,7 @@ var TRANSLATIONS = {
     reset_completion: "Reset completion",
     unclaim: "Unclaim",
     no_chores_assigned: "No chores assigned yet!",
+    nothing_due_today: "\u{1F389} Nothing due today!",
     member_not_found: "Member not found.",
     all_done_banner: "\u{1F389} All done! Claim bonus chores from Available Chores \u2192",
     can_claim: "{names} can claim!",
@@ -668,7 +669,7 @@ var TRANSLATIONS = {
     recur_none: "Una vez / Sin reinicio",
     recur_daily: "Diaria (se reinicia cada d\xEDa)",
     recur_weekdays: "Entre semana (Lun\u2013Vie)",
-    recur_weekly: "Semanal (elegir d\xEDas)",
+    recur_weekly: "Solo en los d\xEDas elegidos",
     daily: "Diaria",
     weekdays: "Entre semana",
     weekly: "Semanal",
@@ -684,6 +685,7 @@ var TRANSLATIONS = {
     reset_completion: "Restablecer estado",
     unclaim: "Liberar",
     no_chores_assigned: "\xA1A\xFAn no hay tareas asignadas!",
+    nothing_due_today: "\u{1F389} \xA1Nada para hoy!",
     member_not_found: "Miembro no encontrado.",
     all_done_banner: "\u{1F389} \xA1Todo hecho! Reclama tareas extra en Tareas Disponibles \u2192",
     can_claim: "\xA1{names} pueden reclamar!",
@@ -760,7 +762,7 @@ var TRANSLATIONS = {
     recur_none: "Einmalig / Kein Zur\xFCcksetzen",
     recur_daily: "T\xE4glich (wird jeden Tag zur\xFCckgesetzt)",
     recur_weekdays: "Wochentags (Mo\u2013Fr)",
-    recur_weekly: "W\xF6chentlich (Tage w\xE4hlen)",
+    recur_weekly: "Nur an gew\xE4hlten Tagen",
     daily: "T\xE4glich",
     weekdays: "Wochentags",
     weekly: "W\xF6chentlich",
@@ -776,6 +778,7 @@ var TRANSLATIONS = {
     reset_completion: "Status zur\xFCcksetzen",
     unclaim: "Freigeben",
     no_chores_assigned: "Noch keine Aufgaben zugewiesen!",
+    nothing_due_today: "\u{1F389} Heute nichts zu tun!",
     member_not_found: "Mitglied nicht gefunden.",
     all_done_banner: "\u{1F389} Alles erledigt! Hol dir Bonus-Aufgaben bei Verf\xFCgbare Aufgaben \u2192",
     can_claim: "{names} k\xF6nnen Aufgaben \xFCbernehmen!",
@@ -852,7 +855,7 @@ var TRANSLATIONS = {
     recur_none: "Une fois / Pas de r\xE9initialisation",
     recur_daily: "Quotidienne (r\xE9initialis\xE9e chaque jour)",
     recur_weekdays: "Jours ouvr\xE9s (Lun\u2013Ven)",
-    recur_weekly: "Hebdomadaire (choisir les jours)",
+    recur_weekly: "Uniquement les jours choisis",
     daily: "Quotidienne",
     weekdays: "Jours ouvr\xE9s",
     weekly: "Hebdomadaire",
@@ -868,6 +871,7 @@ var TRANSLATIONS = {
     reset_completion: "R\xE9initialiser l\u2019\xE9tat",
     unclaim: "Lib\xE9rer",
     no_chores_assigned: "Aucune t\xE2che assign\xE9e pour l\u2019instant !",
+    nothing_due_today: "\u{1F389} Rien \xE0 faire aujourd\u2019hui !",
     member_not_found: "Membre introuvable.",
     all_done_banner: "\u{1F389} Tout est fait ! R\xE9clamez des t\xE2ches bonus dans T\xE2ches Disponibles \u2192",
     can_claim: "{names} peuvent r\xE9clamer !",
@@ -944,7 +948,7 @@ var TRANSLATIONS = {
     recur_none: "Eenmalig / Geen reset",
     recur_daily: "Dagelijks (reset elke dag)",
     recur_weekdays: "Doordeweeks (Ma\u2013Vr)",
-    recur_weekly: "Wekelijks (kies dagen)",
+    recur_weekly: "Alleen op gekozen dagen",
     daily: "Dagelijks",
     weekdays: "Doordeweeks",
     weekly: "Wekelijks",
@@ -960,6 +964,7 @@ var TRANSLATIONS = {
     reset_completion: "Status resetten",
     unclaim: "Vrijgeven",
     no_chores_assigned: "Nog geen klusjes toegewezen!",
+    nothing_due_today: "\u{1F389} Vandaag niets te doen!",
     member_not_found: "Lid niet gevonden.",
     all_done_banner: "\u{1F389} Alles klaar! Claim bonusklusjes bij Beschikbare Klusjes \u2192",
     can_claim: "{names} kunnen claimen!",
@@ -1027,7 +1032,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.13.0";
+var CARD_VERSION = "1.14.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1151,6 +1156,19 @@ function lsSet(key, value) {
     localStorage.setItem(key, value);
   } catch (_2) {
   }
+}
+function isChoreDueOn(chore, dow) {
+  if (chore.recurrence === "weekdays") return dow >= 1 && dow <= 5;
+  if (chore.recurrence === "weekly") {
+    const days = chore.recurrenceDays || [];
+    return days.length === 0 || days.includes(dow);
+  }
+  return true;
+}
+function dateKey(d3) {
+  const mm = String(d3.getMonth() + 1).padStart(2, "0");
+  const dd = String(d3.getDate()).padStart(2, "0");
+  return `${d3.getFullYear()}-${mm}-${dd}`;
 }
 function isWeekday() {
   const d3 = (/* @__PURE__ */ new Date()).getDay();
@@ -1538,8 +1556,15 @@ var ChoreTrackerCard = class extends i4 {
     });
     if (changed) this._saveData();
   }
+  // Every chore assigned to a member, regardless of which day it falls on.
+  _getMemberChoresAll(memberId) {
+    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId));
+  }
+  // Chores a member should actually see today — a chore set for Tue/Wed
+  // doesn't appear on Monday.
   _getMemberChores(memberId) {
-    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId)).map((c4) => {
+    const dow = (/* @__PURE__ */ new Date()).getDay();
+    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId)).filter((c4) => isChoreDueOn(c4, dow)).map((c4) => {
       const ms = (c4.memberStates || {})[memberId] || {};
       return {
         ...c4,
@@ -1564,29 +1589,34 @@ var ChoreTrackerCard = class extends i4 {
   }
   // Length of the run of consecutive perfect days ending on the most recent
   // one, plus the date that run started. Returns { length, start }.
+  // Walk back from today counting consecutive good days. A day where nothing
+  // was scheduled keeps the chain alive (nothing was asked, nothing failed),
+  // and today never breaks a streak because the day isn't over yet.
   _streakRun(member) {
-    const days = [...new Set(member.perfectDays || [])].sort();
-    if (!days.length) return { length: 0, start: null };
-    let length = 1;
-    let start = days[days.length - 1];
-    for (let i5 = days.length - 1; i5 > 0; i5--) {
-      const cur = /* @__PURE__ */ new Date(`${days[i5]}T00:00:00`);
-      const prev = /* @__PURE__ */ new Date(`${days[i5 - 1]}T00:00:00`);
-      if (Math.round((cur - prev) / 864e5) !== 1) break;
-      length++;
-      start = days[i5 - 1];
+    const perfect = new Set(member.perfectDays || []);
+    const main = this._getMemberChoresAll(member.id).filter((c4) => !c4._poolRef);
+    if (!main.length) return { length: 0, start: null };
+    let length = 0;
+    let start = null;
+    const today = /* @__PURE__ */ new Date();
+    for (let i5 = 0; i5 < 120; i5++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - i5);
+      const key = dateKey(day);
+      const scheduled = main.some((c4) => isChoreDueOn(c4, day.getDay()));
+      if (!scheduled || perfect.has(key)) {
+        length++;
+        start = key;
+        continue;
+      }
+      if (i5 === 0) continue;
+      break;
     }
     return { length, start };
   }
   _streakInfo(member) {
     const run = this._streakRun(member);
-    const today = todayStr();
-    const days = member.perfectDays || [];
-    const last = run.start ? [...days].sort().pop() : null;
-    const stale = last && Math.round(
-      (/* @__PURE__ */ new Date(`${today}T00:00:00`) - /* @__PURE__ */ new Date(`${last}T00:00:00`)) / 864e5
-    ) > 1;
-    return { length: stale ? 0 : run.length, toGo: STREAK_DAYS - (stale ? 0 : run.length) % STREAK_DAYS };
+    return { length: run.length, toGo: STREAK_DAYS - run.length % STREAK_DAYS };
   }
   // Called whenever a member's completions change. Records today as a perfect
   // day once all main chores are done, and pays the bonus every STREAK_DAYS
@@ -1899,7 +1929,7 @@ var ChoreTrackerCard = class extends i4 {
               ${c4.dollars ? b2`<span class="reward-badge dollars">💵$${num(c4.dollars).toFixed(2)}</span>` : A}
             </div>
           </div>
-        `) : b2`<div class="empty">${this._t("no_chores_assigned")}</div>`}
+        `) : b2`<div class="empty">${this._getMemberChoresAll(m2.id).length ? this._t("nothing_due_today") : this._t("no_chores_assigned")}</div>`}
       </div>
       ${allDone && poolAvailable ? b2`
         <div class="claim-banner" @click=${() => this._setState({ activeTab: "pool" })}>

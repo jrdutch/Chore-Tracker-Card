@@ -13,7 +13,7 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 - **Private Totals** — The bottom of the card shows only the selected member's points and money, so siblings can't compare balances (an all-members scoreboard is opt-in)
 - **Rewards & Cash Out** — Spend points on a customizable reward catalog, or cash out earned money
 - **Weekly Streak Bonus** — Finish all assigned chores 7 days straight for +5 bonus points
-- **Recurring Chores** — Chores can reset daily, on weekdays (Mon–Fri), or on specific days of the week, at your local midnight
+- **Day-Scheduled Chores** — A chore set for Tuesday and Wednesday only appears on those days; daily and weekday chores reset at your local midnight
 - **Automation Events** — Fires events on the HA bus when chores are completed, so you can automate lights, notifications, and payouts
 - **Visual Editor** — Configure title and password right in the dashboard UI editor, no YAML needed
 - **Cross-device Sync** — Data is stored in the dashboard config, shared by all HA users and devices; changes made on one device appear live on the others
@@ -124,9 +124,22 @@ An Available Chore that offers **both** points and a dollar value makes the clai
 
 The pool holds optional extra chores that members can **claim** — but only after completing **all** of their currently assigned chores. Claiming asks which eligible member is taking the chore and moves it to their personal list.
 
-## Recurring chores & earnings
+## Recurring & day-scheduled chores
 
-Daily and weekday chores automatically uncheck at your local midnight so they're ready to do again. **Earnings are kept** — points and dollars are only removed if a chore is manually unchecked or an admin resets it.
+Each chore has a recurrence setting in the admin console:
+
+| Setting | Shows up | Resets |
+| --- | --- | --- |
+| One-time / No reset | Every day | Never (until an admin resets it) |
+| Daily | Every day | Every day at local midnight |
+| Weekdays (Mon–Fri) | Mon–Fri only | Each weekday at local midnight |
+| Only on chosen days | Only on the days you tick | On each of those days |
+
+So a chore set for **Tue + Wed** is simply absent from everyone's list on Monday, Thursday, Friday, and the weekend — no clutter, and the "2 of 5 done" progress counts only what's actually due today.
+
+**Earnings are kept** across resets — points and dollars are only removed if a chore is manually unchecked or an admin resets it.
+
+Streaks understand the schedule too: a day where nothing was scheduled keeps a streak alive rather than breaking it, and the current day never breaks a streak before it's over.
 
 ## Automation events
 

@@ -42,6 +42,12 @@ const SAMPLE = {
       memberStates: { m4: { pending: true, lastResetDate: TODAY } } },
     { id: 'c4', title: 'Put Away Books', emoji: '📕', points: 5, dollars: 0.5,
       recurrence: 'daily', assignedTo: ['m4'], memberStates: { m4: { lastResetDate: TODAY } } },
+    { id: 'c5', title: 'Take Out Trash', emoji: '🗑️', points: 8, dollars: 1,
+      recurrence: 'weekly', recurrenceDays: [d.getDay()],
+      assignedTo: ['m4'], memberStates: { m4: { lastResetDate: TODAY } } },
+    { id: 'c6', title: 'Mow the Lawn (other day)', emoji: '🌿', points: 8, dollars: 1,
+      recurrence: 'weekly', recurrenceDays: [(d.getDay() + 3) % 7],
+      assignedTo: ['m4'], memberStates: { m4: { lastResetDate: TODAY } } },
   ],
   pool: [
     { id: 'p1', title: 'Vacuum Living Room', emoji: '🧹', points: 15, dollars: 2, claimedBy: null },
@@ -201,6 +207,17 @@ await page.evaluate(() => {
 await page.waitForTimeout(400);
 await card.screenshot({ path: join(outDir, '07-light-theme.png') });
 shots.push('07-light-theme.png');
+
+// Verify day-scoping: a chore set for another weekday must not appear today
+const dayCheck = await page.evaluate(() => {
+  const el = document.querySelector('chore-tracker-card');
+  return el._getMemberChores('m4').map(c => c.title);
+});
+const mustShow = 'Take Out Trash';
+const mustHide = 'Mow the Lawn (other day)';
+if (!dayCheck.includes(mustShow)) errors.push(`Day-scoping: "${mustShow}" should be visible today but was not`);
+if (dayCheck.includes(mustHide)) errors.push(`Day-scoping: "${mustHide}" is scheduled for another day but appeared today`);
+console.log(`Day-scoping check — visible today: ${dayCheck.join(', ')}`);
 
 await browser.close();
 

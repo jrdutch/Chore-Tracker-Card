@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.13.0';
+const CARD_VERSION = '1.14.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -63,6 +63,24 @@ function lsGet(key) {
 }
 function lsSet(key, value) {
   try { localStorage.setItem(key, value); } catch (_) { /* cache unavailable */ }
+}
+
+// Which weekdays a chore applies to. Daily/one-time chores are always due;
+// "weekdays" covers Mon–Fri; "weekly" is limited to the days picked for it
+// (an empty pick list means every day, so a half-configured chore isn't lost).
+function isChoreDueOn(chore, dow) {
+  if (chore.recurrence === 'weekdays') return dow >= 1 && dow <= 5;
+  if (chore.recurrence === 'weekly') {
+    const days = chore.recurrenceDays || [];
+    return days.length === 0 || days.includes(dow);
+  }
+  return true;
+}
+
+function dateKey(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 function isWeekday() {
@@ -508,9 +526,18 @@ class ChoreTrackerCard extends LitElement {
     if (changed) this._saveData();
   }
 
+  // Every chore assigned to a member, regardless of which day it falls on.
+  _getMemberChoresAll(memberId) {
+    return (this._data.chores || []).filter(c => (c.assignedTo || []).includes(memberId));
+  }
+
+  // Chores a member should actually see today — a chore set for Tue/Wed
+  // doesn't appear on Monday.
   _getMemberChores(memberId) {
+    const dow = new Date().getDay();
     return (this._data.chores || [])
       .filter(c => (c.assignedTo || []).includes(memberId))
+      .filter(c => isChoreDueOn(c, dow))
       .map(c => {
         const ms = ((c.memberStates || {})[memberId] || {});
         return {
@@ -540,30 +567,37 @@ class ChoreTrackerCard extends LitElement {
 
   // Length of the run of consecutive perfect days ending on the most recent
   // one, plus the date that run started. Returns { length, start }.
+  // Walk back from today counting consecutive good days. A day where nothing
+  // was scheduled keeps the chain alive (nothing was asked, nothing failed),
+  // and today never breaks a streak because the day isn't over yet.
   _streakRun(member) {
-    const days = [...new Set(member.perfectDays || [])].sort();
-    if (!days.length) return { length: 0, start: null };
-    let length = 1;
-    let start = days[days.length - 1];
-    for (let i = days.length - 1; i > 0; i--) {
-      const cur = new Date(`${days[i]}T00:00:00`);
-      const prev = new Date(`${days[i - 1]}T00:00:00`);
-      if (Math.round((cur - prev) / 86400000) !== 1) break;
-      length++;
-      start = days[i - 1];
+    const perfect = new Set(member.perfectDays || []);
+    const main = this._getMemberChoresAll(member.id).filter(c => !c._poolRef);
+    if (!main.length) return { length: 0, start: null };
+
+    let length = 0;
+    let start = null;
+    const today = new Date();
+    for (let i = 0; i < 120; i++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - i);
+      const key = dateKey(day);
+      const scheduled = main.some(c => isChoreDueOn(c, day.getDay()));
+
+      if (!scheduled || perfect.has(key)) {
+        length++;
+        start = key;
+        continue;
+      }
+      if (i === 0) continue; // today is still in progress
+      break;
     }
     return { length, start };
   }
 
   _streakInfo(member) {
     const run = this._streakRun(member);
-    const today = todayStr();
-    const days = member.perfectDays || [];
-    // A run only counts as "live" if it includes today or yesterday
-    const last = run.start ? [...days].sort().pop() : null;
-    const stale = last && Math.round(
-      (new Date(`${today}T00:00:00`) - new Date(`${last}T00:00:00`)) / 86400000) > 1;
-    return { length: stale ? 0 : run.length, toGo: STREAK_DAYS - ((stale ? 0 : run.length) % STREAK_DAYS) };
+    return { length: run.length, toGo: STREAK_DAYS - (run.length % STREAK_DAYS) };
   }
 
   // Called whenever a member's completions change. Records today as a perfect
@@ -905,7 +939,11 @@ class ChoreTrackerCard extends LitElement {
               ${c.dollars ? html`<span class="reward-badge dollars">💵$${num(c.dollars).toFixed(2)}</span>` : nothing}
             </div>
           </div>
-        `) : html`<div class="empty">${this._t('no_chores_assigned')}</div>`}
+        `) : html`<div class="empty">${
+          this._getMemberChoresAll(m.id).length
+            ? this._t('nothing_due_today')
+            : this._t('no_chores_assigned')
+        }</div>`}
       </div>
       ${allDone && poolAvailable ? html`
         <div class="claim-banner" @click=${() => this._setState({ activeTab: 'pool' })}>
