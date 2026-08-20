@@ -130,12 +130,14 @@ Each chore has a recurrence setting in the admin console:
 
 | Setting | Shows up | Resets |
 | --- | --- | --- |
-| One-time / No reset | Every day | Never (until an admin resets it) |
+| One-time / No reset | Until finished | Drops off the list the day after it's completed |
 | Daily | Every day | Every day at local midnight |
 | Weekdays (Mon–Fri) | Mon–Fri only | Each weekday at local midnight |
 | Only on chosen days | Only on the days you tick | On each of those days |
 
 So a chore set for **Tue + Wed** is simply absent from everyone's list on Monday, Thursday, Friday, and the weekend — no clutter, and the "2 of 5 done" progress counts only what's actually due today.
+
+**One-time chores** (and extras claimed from the Available Chores pool) stay on the list, ticked, for the rest of the day they're finished — so a mis-tap can be undone — and are cleared the next day. Once every assigned member has finished one, it's removed entirely.
 
 **Earnings are kept** across resets — points and dollars are only removed if a chore is manually unchecked or an admin resets it.
 

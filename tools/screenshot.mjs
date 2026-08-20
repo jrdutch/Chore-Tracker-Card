@@ -48,6 +48,22 @@ const SAMPLE = {
     { id: 'c6', title: 'Mow the Lawn (other day)', emoji: '🌿', points: 8, dollars: 1,
       recurrence: 'weekly', recurrenceDays: [(d.getDay() + 3) % 7],
       assignedTo: ['m4'], memberStates: { m4: { lastResetDate: TODAY } } },
+    // One-time chore finished yesterday — must have dropped off the list
+    { id: 'c7', title: 'Clean the Garage (done yesterday)', emoji: '🧹', points: 20, dollars: 3,
+      recurrence: 'none', assignedTo: ['m4'],
+      memberStates: { m4: { completed: true, completedDate: iso(1) } } },
+    // One-time chore finished today — stays until tomorrow (undo window)
+    { id: 'c8', title: 'Sort Recycling (done today)', emoji: '♻️', points: 10, dollars: 1,
+      recurrence: 'none', assignedTo: ['m4'],
+      memberStates: { m4: { completed: true, completedDate: TODAY } } },
+    // Claimed pool chore finished yesterday — must also drop off
+    { id: 'c9', title: 'Wash the Car (claimed, done yesterday)', emoji: '🚗', points: 25, dollars: 0,
+      recurrence: 'none', _poolRef: 'p2', assignedTo: ['m4'],
+      memberStates: { m4: { completed: true, completedDate: iso(1) } } },
+    // Legacy one-time chore with no completedDate (pre-upgrade data)
+    { id: 'c10', title: 'Old Finished Chore (legacy)', emoji: '📦', points: 5, dollars: 0,
+      recurrence: 'none', assignedTo: ['m4'],
+      memberStates: { m4: { completed: true } } },
   ],
   pool: [
     { id: 'p1', title: 'Vacuum Living Room', emoji: '🧹', points: 15, dollars: 2, claimedBy: null },
@@ -213,11 +229,20 @@ const dayCheck = await page.evaluate(() => {
   const el = document.querySelector('chore-tracker-card');
   return el._getMemberChores('m4').map(c => c.title);
 });
-const mustShow = 'Take Out Trash';
-const mustHide = 'Mow the Lawn (other day)';
-if (!dayCheck.includes(mustShow)) errors.push(`Day-scoping: "${mustShow}" should be visible today but was not`);
-if (dayCheck.includes(mustHide)) errors.push(`Day-scoping: "${mustHide}" is scheduled for another day but appeared today`);
-console.log(`Day-scoping check — visible today: ${dayCheck.join(', ')}`);
+const expectVisible = ['Take Out Trash', 'Sort Recycling (done today)'];
+const expectHidden = [
+  'Mow the Lawn (other day)',
+  'Clean the Garage (done yesterday)',
+  'Wash the Car (claimed, done yesterday)',
+  'Old Finished Chore (legacy)',
+];
+expectVisible.forEach(t => {
+  if (!dayCheck.includes(t)) errors.push(`Expected "${t}" to be visible today but it was not`);
+});
+expectHidden.forEach(t => {
+  if (dayCheck.includes(t)) errors.push(`Expected "${t}" to be gone from today's list but it appeared`);
+});
+console.log(`Visible today: ${dayCheck.join(', ')}`);
 
 await browser.close();
 

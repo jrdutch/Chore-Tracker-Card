@@ -1032,7 +1032,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.14.0";
+var CARD_VERSION = "1.14.1";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1528,10 +1528,41 @@ var ChoreTrackerCard = class extends i4 {
       this._flushSave();
     }
   }
+  // One-time chores (including ones claimed from the Available Chores pool)
+  // have no recurrence, so they were never cleared and piled up on the list
+  // forever. Once the day they were completed has passed they drop off, and
+  // a chore every assigned member has finished is removed outright.
+  _retireFinishedOneOffs(today) {
+    const chores = this._data.chores || [];
+    const keep = [];
+    let changed = false;
+    chores.forEach((chore) => {
+      const oneOff = !chore.recurrence || chore.recurrence === "none";
+      if (!oneOff) {
+        keep.push(chore);
+        return;
+      }
+      const states = chore.memberStates || {};
+      const assigned = chore.assignedTo || [];
+      assigned.forEach((memberId) => {
+        const st = states[memberId];
+        if (!st || !st.completed || st.archived) return;
+        if (st.completedDate !== today) {
+          st.archived = true;
+          changed = true;
+        }
+      });
+      const everyoneDone = assigned.length > 0 && assigned.every((memberId) => (states[memberId] || {}).archived);
+      if (everyoneDone) changed = true;
+      else keep.push(chore);
+    });
+    if (keep.length !== chores.length) this._data.chores = keep;
+    return changed;
+  }
   // Auto-reset chores based on recurrence schedule
   _checkRecurrenceResets() {
     const today = todayStr();
-    let changed = false;
+    let changed = this._retireFinishedOneOffs(today);
     (this._data.chores || []).forEach((chore) => {
       if (!chore.recurrence || chore.recurrence === "none") return;
       (chore.assignedTo || []).forEach((memberId) => {
@@ -1558,13 +1589,13 @@ var ChoreTrackerCard = class extends i4 {
   }
   // Every chore assigned to a member, regardless of which day it falls on.
   _getMemberChoresAll(memberId) {
-    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId));
+    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId)).filter((c4) => !((c4.memberStates || {})[memberId] || {}).archived);
   }
   // Chores a member should actually see today — a chore set for Tue/Wed
   // doesn't appear on Monday.
   _getMemberChores(memberId) {
     const dow = (/* @__PURE__ */ new Date()).getDay();
-    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId)).filter((c4) => isChoreDueOn(c4, dow)).map((c4) => {
+    return (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(memberId)).filter((c4) => isChoreDueOn(c4, dow)).filter((c4) => !((c4.memberStates || {})[memberId] || {}).archived).map((c4) => {
       const ms = (c4.memberStates || {})[memberId] || {};
       return {
         ...c4,
@@ -2514,6 +2545,8 @@ var ChoreTrackerCard = class extends i4 {
     const wasCompleted = state.completed;
     state.completed = !wasCompleted;
     state.pending = false;
+    if (state.completed) state.completedDate = todayStr();
+    else delete state.completedDate;
     if (member) {
       const pts = num(chore.points);
       const dlr = num(chore.dollars);
@@ -2565,6 +2598,7 @@ var ChoreTrackerCard = class extends i4 {
     if (!state || !state.pending || state.completed) return;
     state.pending = false;
     state.completed = true;
+    state.completedDate = todayStr();
     member.points = num(member.points) + num(chore.points);
     member.dollars = round2(num(member.dollars) + num(chore.dollars));
     this._fireHAEvent("chore_tracker_chore_completed", {
