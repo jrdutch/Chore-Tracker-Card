@@ -49,6 +49,7 @@ admin_password: "yourpassword"
 | `title` | `Chore Tracker` | Card title shown in the header |
 | `admin_password` | `1234` | Password for the admin console |
 | `show_family_totals` | `false` | When `true`, the bottom of the card lists every member's points and money. Off by default so only the selected member's totals are visible |
+| `sync_delay_seconds` | `8` | How long the card waits after the last change before syncing to other devices. Saving rebuilds the dashboard view, so a longer delay means a whole run of check-offs costs one reload instead of several. Lower it if you want other devices to update sooner |
 | `require_approval` | `false` | When `true`, marking a chore adds it to a pending list; an admin approves (awards points) or rejects it in the admin console |
 | `language` | *(HA user language)* | UI language override. Built in: `en`, `es`, `de`, `fr`, `nl`. Follows your HA profile language automatically when unset |
 | `storage_key` | *(auto)* | Stable identity for the card's data. Stamped into the config automatically on first save — don't change it, or the card loses track of its data |

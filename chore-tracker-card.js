@@ -1032,7 +1032,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.14.1";
+var CARD_VERSION = "1.15.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1351,10 +1351,28 @@ var ChoreTrackerCard = class extends i4 {
     lsSet(this._storageKey(), JSON.stringify(this._data));
     if (!this._hass) return;
     clearTimeout(this._saveTimer);
+    const delay = Math.max(1, num(this._config.sync_delay_seconds) || 8) * 1e3;
     this._saveTimer = setTimeout(() => {
       this._saveTimer = null;
       this._flushSave();
-    }, 2500);
+    }, delay);
+  }
+  // Don't strand a deferred save if the tab is backgrounded or closed.
+  connectedCallback() {
+    super.connectedCallback();
+    if (!this._flushOnHide) {
+      this._flushOnHide = () => {
+        if (this._saveTimer) {
+          clearTimeout(this._saveTimer);
+          this._saveTimer = null;
+          this._flushSave();
+        }
+      };
+    }
+    window.addEventListener("pagehide", this._flushOnHide);
+    document.addEventListener("visibilitychange", this._onVisibility ||= () => {
+      if (document.visibilityState === "hidden") this._flushOnHide();
+    });
   }
   // Serialize lovelace writes: never two in flight, and a save requested
   // while one is running re-runs after it finishes (with the latest data).
@@ -1522,6 +1540,8 @@ var ChoreTrackerCard = class extends i4 {
   // edit mode, etc.) before the timer fires.
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this._flushOnHide) window.removeEventListener("pagehide", this._flushOnHide);
+    if (this._onVisibility) document.removeEventListener("visibilitychange", this._onVisibility);
     if (this._saveTimer) {
       clearTimeout(this._saveTimer);
       this._saveTimer = null;
