@@ -1,3 +1,5 @@
 node_modules
 
 tools/shots/
+__pycache__/
+*.pyc
