@@ -90,11 +90,29 @@ mechanical:
 }
 ```
 
-**One migration of meaning:** `require_approval` currently lives in the *card
-config*. Because the approval rules move server-side, it moves into
-`settings`, editable from the card's admin console (which calls a service).
-Card config keeps only presentation options: `title`, `language`,
-`show_family_totals`.
+### Where settings live
+
+The in-card **admin console (⚙️ gear) does not change** — same card, same gear,
+same tabs, same password prompt. The only shift is which of the *dashboard card
+editor's* options survive.
+
+The principle: **card config = how this card looks for this viewer**;
+**integration settings = family-wide rules the server enforces**.
+
+| Setting | Today | After | Why |
+| --- | --- | --- | --- |
+| `title` | Card editor | Card editor | Presentation, per-card |
+| `language` | Card editor | Card editor | Per-viewer presentation |
+| `show_family_totals` | Card editor | Card editor | Presentation, per-card |
+| `admin_password` | Card editor | Card editor | Stays put — a client-side gate, and keeping it here avoids any lock-out risk |
+| `require_approval` | Card editor | **Admin console** | The server enforces it, so it must be one family-wide value, not per-card |
+| `sync_delay_seconds` | Card editor | *removed* | No debounce needed — writes no longer touch the dashboard |
+| `lovelace_url_path` | Card editor | *removed* | Nothing to locate in the dashboard config any more |
+| `storage_key` | Card config | *removed* | The integration owns the data |
+
+Two new family-wide values also live in `settings` and become editable from the
+admin console: `streak_days` (7) and `streak_bonus` (5), which are currently
+hard-coded constants.
 
 Storage: `homeassistant.helpers.storage.Store(hass, 1, "chore_tracker")` with
 delayed writes, a schema version, and a migration hook.
