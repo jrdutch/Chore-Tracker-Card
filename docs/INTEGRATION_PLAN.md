@@ -15,7 +15,37 @@ bundles and auto-registers its own Lovelace card.
 | --- | --- | --- |
 | Integration domain | `chore_tracker` | Becomes the service prefix (`chore_tracker.toggle_chore`) and entity prefix. Changing it later is a breaking change for automations. |
 | Per-member sensors | **Yes**, one per member | Skipping them means automations must dig through JSON attributes and you lose points history/graphs. |
-| Repository | Convert **this** repo to HACS category `integration` | Alternative is a second repo; converting keeps the stars, topics, screenshot and history. Requires existing installs to remove and re-add the custom repo as "Integration". |
+| Repository | **New, separate repo** — this one stays untouched at v1.15.0 | Lets both run side by side for comparison, and leaves a working fallback if the rewrite hits trouble. |
+| Card element name | **Must differ** from `chore-tracker-card` | Two cards registering the same custom element crash each other. Name TBD — see below. |
+
+---
+
+## 0. Running both side by side
+
+This is built as a **new repository**. The existing card repo stays exactly as
+it is (v1.15.0) so it keeps working as a fallback and as a comparison.
+
+For both to be installed at once, three names must not collide:
+
+| Thing | Old project | New project |
+| --- | --- | --- |
+| Custom element / card type | `custom:chore-tracker-card` | **must differ** |
+| HACS category | Frontend (plugin) | Integration |
+| Integration domain | *(none)* | `chore_tracker` — no conflict |
+
+Only the card element actually collides. Registering the same element name twice
+throws `"chore-tracker-card" has already been used` and breaks both cards.
+
+**Data is fully isolated:** the old card reads and writes the dashboard config;
+the new one uses `.storage/chore_tracker`. Neither can corrupt the other.
+
+> **Caution while comparing:** once data is imported into the new project, the
+> two copies diverge — points earned in one won't appear in the other. Use one
+> as the family's real board and the other for evaluation, or expect to re-import
+> when you pick a winner.
+
+Once you've picked a winner, the loser gets archived and — if the new one wins —
+the card element can be renamed back to the clean name in a later major version.
 
 ---
 
@@ -229,9 +259,16 @@ No manual export, and nothing is destroyed:
 The old `data` blob stays in the dashboard config, untouched, as a rollback
 safety net. It can be deleted by hand later.
 
-**HACS category change:** because the repo moves from `plugin` to `integration`,
-the existing custom-repository entry must be removed and re-added with the
-Integration category. Documented in the README with screenshots.
+**Installing alongside the old card:** the new repo is added to HACS as a
+*separate* custom repository with category **Integration**. The old card's HACS
+entry stays as it is. Both can be installed at the same time; put them on
+different dashboards (or different views) while you compare.
+
+**Where the import data comes from:** the card knows its own dashboard config, so
+the one-time `import_data` call reads the old card's `data` blob directly if the
+old card is on the same dashboard. If it isn't, the old data can be copied from
+the old card's YAML (Edit dashboard → old card → Show code editor) and passed to
+`chore_tracker.import_data` from Developer Tools → Actions.
 
 ---
 
