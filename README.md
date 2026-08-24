@@ -78,6 +78,7 @@ Click the ⚙️ gear icon and enter the admin password to:
 - Set recurrence (one-time, daily, weekdays)
 - Manage the Available Chores pool
 - Reset a chore's completion status
+- Adjust a member's points and money directly (corrections are logged)
 - Reset a member's earnings
 
 Deleting or resetting requires a second confirming tap, so a stray finger can't wipe anything.
@@ -101,6 +102,7 @@ At the bottom of the card, the totals bar shows the **currently selected member'
 
 - **Redeem Points** — spend points from the reward catalog. Rewards they can't afford yet are greyed out.
 - **Cash Out** — hand over their earned allowance and reset the balance to $0.
+- Admins can also **edit a balance directly** in Admin → Members — useful for correcting a mistake or awarding a one-off bonus. The change is written to the member's activity log as a signed adjustment (`+10⭐`, `-$1.50`) so balances never move without a trace.
 - Recent redemptions are listed in the wallet, and the full log lives in the admin console's **Rewards** tab.
 
 The card ships with a starter reward catalog you can edit, reorder, or replace entirely in **Admin → Rewards**. Suggested costs assume a typical chore is worth about 5 points:
@@ -155,6 +157,7 @@ The card fires events on the Home Assistant bus that you can use as automation t
 | `chore_tracker_streak_bonus` | A member completes 7 straight perfect days | `member`, `days`, `points` |
 | `chore_tracker_reward_redeemed` | Points spent on a reward | `member`, `reward`, `points`, `points_remaining` |
 | `chore_tracker_cash_out` | Earned money cashed out | `member`, `amount` |
+| `chore_tracker_balance_adjusted` | An admin edited a member's points or money | `member`, `points_change`, `dollars_change`, `points`, `dollars` |
 | `chore_tracker_all_done` | A member finishes their whole list | `member`, `total_points`, `total_dollars` |
 
 Example — flash a light when a kid finishes all their chores:
