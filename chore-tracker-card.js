@@ -589,6 +589,9 @@ var TRANSLATIONS = {
     delete: "Delete",
     confirm: "Confirm?",
     reset_earnings: "Reset Earnings to $0",
+    balance_money: "Money ($)",
+    adjustment: "Adjustment",
+    adjust_hint: "Edit the values above to correct a balance \u2014 the change is logged in the member\u2019s recent activity.",
     reset_completion: "Reset completion",
     unclaim: "Unclaim",
     no_chores_assigned: "No chores assigned yet!",
@@ -682,6 +685,9 @@ var TRANSLATIONS = {
     delete: "Eliminar",
     confirm: "\xBFConfirmar?",
     reset_earnings: "Restablecer ganancias a $0",
+    balance_money: "Dinero ($)",
+    adjustment: "Ajuste",
+    adjust_hint: "Edita los valores de arriba para corregir un saldo; el cambio queda registrado en la actividad reciente del miembro.",
     reset_completion: "Restablecer estado",
     unclaim: "Liberar",
     no_chores_assigned: "\xA1A\xFAn no hay tareas asignadas!",
@@ -775,6 +781,9 @@ var TRANSLATIONS = {
     delete: "L\xF6schen",
     confirm: "Best\xE4tigen?",
     reset_earnings: "Verdienst auf $0 zur\xFCcksetzen",
+    balance_money: "Geld ($)",
+    adjustment: "Anpassung",
+    adjust_hint: "Werte oben bearbeiten, um ein Guthaben zu korrigieren \u2014 die \xC4nderung wird in den letzten Aktivit\xE4ten des Mitglieds protokolliert.",
     reset_completion: "Status zur\xFCcksetzen",
     unclaim: "Freigeben",
     no_chores_assigned: "Noch keine Aufgaben zugewiesen!",
@@ -868,6 +877,9 @@ var TRANSLATIONS = {
     delete: "Supprimer",
     confirm: "Confirmer ?",
     reset_earnings: "Remettre les gains \xE0 0 $",
+    balance_money: "Argent ($)",
+    adjustment: "Ajustement",
+    adjust_hint: "Modifiez les valeurs ci-dessus pour corriger un solde \u2014 le changement est enregistr\xE9 dans l\u2019activit\xE9 r\xE9cente du membre.",
     reset_completion: "R\xE9initialiser l\u2019\xE9tat",
     unclaim: "Lib\xE9rer",
     no_chores_assigned: "Aucune t\xE2che assign\xE9e pour l\u2019instant !",
@@ -961,6 +973,9 @@ var TRANSLATIONS = {
     delete: "Verwijderen",
     confirm: "Bevestigen?",
     reset_earnings: "Verdiensten terugzetten naar $0",
+    balance_money: "Geld ($)",
+    adjustment: "Aanpassing",
+    adjust_hint: "Pas de waarden hierboven aan om een saldo te corrigeren \u2014 de wijziging wordt vastgelegd in de recente activiteit van het lid.",
     reset_completion: "Status resetten",
     unclaim: "Vrijgeven",
     no_chores_assigned: "Nog geen klusjes toegewezen!",
@@ -1032,7 +1047,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.15.0";
+var CARD_VERSION = "1.16.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1883,11 +1898,25 @@ var ChoreTrackerCard = class extends i4 {
         ${rows.map((h3) => b2`
           <div class="history-row">
             <span>${h3.emoji || (h3.type === "cash" ? "\u{1F4B5}" : "\u{1F381}")} ${h3.label}</span>
-            <span class="history-cost">${h3.type === "cash" ? `-$${num(h3.dollars).toFixed(2)}` : `-\u2B50${num(h3.points)}`}</span>
+            <span class="history-cost">${this._historyAmount(h3)}</span>
           </div>
         `)}
       </div>
     `;
+  }
+  // Redemptions and cash-outs are always deductions; manual adjustments can go
+  // either way, so they're shown signed.
+  _historyAmount(entry) {
+    if (entry.type === "adjust") {
+      const parts = [];
+      const points = num(entry.points);
+      const dollars = num(entry.dollars);
+      if (points) parts.push(`${points > 0 ? "+" : ""}${points}\u2B50`);
+      if (dollars) parts.push(`${dollars > 0 ? "+" : "-"}$${Math.abs(dollars).toFixed(2)}`);
+      return parts.join(" ") || "\u2014";
+    }
+    if (entry.type === "cash") return `-$${num(entry.dollars).toFixed(2)}`;
+    return `-\u2B50${num(entry.points)}`;
   }
   _logHistory(entry) {
     if (!Array.isArray(this._data.history)) this._data.history = [];
@@ -2358,11 +2387,14 @@ var ChoreTrackerCard = class extends i4 {
           <input class="form-input" id="em-name" .value=${member.name || ""} placeholder=${this._t("name")} />
           <label>${this._t("avatar")}</label>
           <input class="form-input" id="em-avatar" .value=${member.avatar || ""} placeholder="e.g. 👦 or JD" />
+          <label>⭐ ${this._t("points")}</label>
+          <input class="form-input" id="em-points" type="number" min="0" step="1"
+            .value=${String(Math.round(num(member.points)))} />
+          <label>💵 ${this._t("balance_money")}</label>
+          <input class="form-input" id="em-dollars" type="number" min="0" step="0.01"
+            .value=${num(member.dollars).toFixed(2)} />
           ${!isNew ? b2`
-            <div class="member-totals">
-              <span>⭐ ${member.points || 0} ${this._t("pts")}</span>
-              <span>💵 $${num(member.dollars).toFixed(2)}</span>
-            </div>
+            <span class="empty-inline">${this._t("adjust_hint")}</span>
             ${this._dangerBtn(`reset-earn:${editing}`, this._t("reset_earnings"), () => this._resetMemberEarnings(editing))}
           ` : A}
           <div class="form-actions">
@@ -2502,7 +2534,7 @@ var ChoreTrackerCard = class extends i4 {
                 <div class="admin-item-title">${h3.label}</div>
                 <div class="admin-item-meta">${member ? member.name : this._t("unknown")} · ${h3.date}</div>
               </div>
-              <span class="reward-cost">${h3.type === "cash" ? `-$${num(h3.dollars).toFixed(2)}` : `-\u2B50${num(h3.points)}`}</span>
+              <span class="reward-cost">${this._historyAmount(h3)}</span>
             </div>
           `;
     }) : b2`<div class="empty-inline pending-empty">${this._t("no_history")}</div>`}
@@ -2704,11 +2736,34 @@ var ChoreTrackerCard = class extends i4 {
     const name = this._getInput("em-name")?.value?.trim();
     if (!name) return;
     const avatar = this._getInput("em-avatar")?.value?.trim() || "";
+    const points = Math.max(0, Math.round(num(this._getInput("em-points")?.value)));
+    const dollars = Math.max(0, round2(this._getInput("em-dollars")?.value));
     if (editing === "new") {
-      this._data.members.push({ id: this._uid(), name, avatar, points: 0, dollars: 0 });
+      this._data.members.push({ id: this._uid(), name, avatar, points, dollars });
     } else {
       const m2 = (this._data.members || []).find((m3) => m3.id === editing);
-      if (m2) Object.assign(m2, { name, avatar });
+      if (m2) {
+        const dPoints = points - num(m2.points);
+        const dDollars = round2(dollars - num(m2.dollars));
+        if (dPoints !== 0 || dDollars !== 0) {
+          this._logHistory({
+            memberId: m2.id,
+            type: "adjust",
+            label: this._t("adjustment"),
+            emoji: "\u270F\uFE0F",
+            points: dPoints,
+            dollars: dDollars
+          });
+          this._fireHAEvent("chore_tracker_balance_adjusted", {
+            member: name,
+            points_change: dPoints,
+            dollars_change: dDollars,
+            points,
+            dollars
+          });
+        }
+        Object.assign(m2, { name, avatar, points, dollars });
+      }
     }
     this._saveData();
     this._cancelEdit();

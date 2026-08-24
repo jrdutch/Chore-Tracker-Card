@@ -80,6 +80,8 @@ const SAMPLE = {
   history: [
     { id: 'h1', memberId: 'm4', type: 'reward', label: 'Soda with dinner', emoji: '🥤', points: 15, date: iso(2) },
     { id: 'h2', memberId: 'm4', type: 'cash', label: 'Cash Out', emoji: '💵', dollars: 5, date: iso(4) },
+    { id: 'h3', memberId: 'm4', type: 'adjust', label: 'Adjustment', emoji: '✏️', points: 10, dollars: 0, date: iso(1) },
+    { id: 'h4', memberId: 'm4', type: 'adjust', label: 'Adjustment', emoji: '✏️', points: -5, dollars: -1.5, date: iso(3) },
   ],
 };
 
@@ -193,7 +195,24 @@ await page.waitForTimeout(300);
 await card.screenshot({ path: join(outDir, '05-admin-chores.png') });
 shots.push('05-admin-chores.png');
 
-// 5. Admin console — rewards catalog
+// 5. Admin console — member editor with adjustable balances
+await page.evaluate(() => {
+  const el = document.querySelector('chore-tracker-card');
+  el._state.adminTab = 'members';
+  el._state.editingMember = 'm4';
+  el.requestUpdate();
+});
+await page.waitForTimeout(300);
+await card.screenshot({ path: join(outDir, '08-admin-member.png') });
+shots.push('08-admin-member.png');
+
+await page.evaluate(() => {
+  const el = document.querySelector('chore-tracker-card');
+  el._state.editingMember = null;
+  el.requestUpdate();
+});
+
+// 6. Admin console — rewards catalog
 await page.evaluate(() => {
   const el = document.querySelector('chore-tracker-card');
   el._state.adminTab = 'rewards';

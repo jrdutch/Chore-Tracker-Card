@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.15.0';
+const CARD_VERSION = '1.16.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -905,11 +905,26 @@ class ChoreTrackerCard extends LitElement {
         ${rows.map(h => html`
           <div class="history-row">
             <span>${h.emoji || (h.type === 'cash' ? '💵' : '🎁')} ${h.label}</span>
-            <span class="history-cost">${h.type === 'cash' ? `-$${num(h.dollars).toFixed(2)}` : `-⭐${num(h.points)}`}</span>
+            <span class="history-cost">${this._historyAmount(h)}</span>
           </div>
         `)}
       </div>
     `;
+  }
+
+  // Redemptions and cash-outs are always deductions; manual adjustments can go
+  // either way, so they're shown signed.
+  _historyAmount(entry) {
+    if (entry.type === 'adjust') {
+      const parts = [];
+      const points = num(entry.points);
+      const dollars = num(entry.dollars);
+      if (points) parts.push(`${points > 0 ? '+' : ''}${points}⭐`);
+      if (dollars) parts.push(`${dollars > 0 ? '+' : '-'}$${Math.abs(dollars).toFixed(2)}`);
+      return parts.join(' ') || '—';
+    }
+    if (entry.type === 'cash') return `-$${num(entry.dollars).toFixed(2)}`;
+    return `-⭐${num(entry.points)}`;
   }
 
   _logHistory(entry) {
@@ -1411,11 +1426,14 @@ class ChoreTrackerCard extends LitElement {
           <input class="form-input" id="em-name" .value=${member.name || ''} placeholder=${this._t('name')} />
           <label>${this._t('avatar')}</label>
           <input class="form-input" id="em-avatar" .value=${member.avatar || ''} placeholder="e.g. 👦 or JD" />
+          <label>⭐ ${this._t('points')}</label>
+          <input class="form-input" id="em-points" type="number" min="0" step="1"
+            .value=${String(Math.round(num(member.points)))} />
+          <label>💵 ${this._t('balance_money')}</label>
+          <input class="form-input" id="em-dollars" type="number" min="0" step="0.01"
+            .value=${num(member.dollars).toFixed(2)} />
           ${!isNew ? html`
-            <div class="member-totals">
-              <span>⭐ ${member.points || 0} ${this._t('pts')}</span>
-              <span>💵 $${num(member.dollars).toFixed(2)}</span>
-            </div>
+            <span class="empty-inline">${this._t('adjust_hint')}</span>
             ${this._dangerBtn(`reset-earn:${editing}`, this._t('reset_earnings'), () => this._resetMemberEarnings(editing))}
           ` : nothing}
           <div class="form-actions">
@@ -1562,7 +1580,7 @@ class ChoreTrackerCard extends LitElement {
                 <div class="admin-item-title">${h.label}</div>
                 <div class="admin-item-meta">${member ? member.name : this._t('unknown')} · ${h.date}</div>
               </div>
-              <span class="reward-cost">${h.type === 'cash' ? `-$${num(h.dollars).toFixed(2)}` : `-⭐${num(h.points)}`}</span>
+              <span class="reward-cost">${this._historyAmount(h)}</span>
             </div>
           `;
         }) : html`<div class="empty-inline pending-empty">${this._t('no_history')}</div>`}
@@ -1793,11 +1811,37 @@ class ChoreTrackerCard extends LitElement {
     const name = this._getInput('em-name')?.value?.trim();
     if (!name) return;
     const avatar = this._getInput('em-avatar')?.value?.trim() || '';
+    const points = Math.max(0, Math.round(num(this._getInput('em-points')?.value)));
+    const dollars = Math.max(0, round2(this._getInput('em-dollars')?.value));
+
     if (editing === 'new') {
-      this._data.members.push({ id: this._uid(), name, avatar, points: 0, dollars: 0 });
+      this._data.members.push({ id: this._uid(), name, avatar, points, dollars });
     } else {
       const m = (this._data.members || []).find(m => m.id === editing);
-      if (m) Object.assign(m, { name, avatar });
+      if (m) {
+        // Record any manual balance change so it shows up in the member's
+        // recent activity rather than a balance silently changing overnight.
+        const dPoints = points - num(m.points);
+        const dDollars = round2(dollars - num(m.dollars));
+        if (dPoints !== 0 || dDollars !== 0) {
+          this._logHistory({
+            memberId: m.id,
+            type: 'adjust',
+            label: this._t('adjustment'),
+            emoji: '✏️',
+            points: dPoints,
+            dollars: dDollars,
+          });
+          this._fireHAEvent('chore_tracker_balance_adjusted', {
+            member: name,
+            points_change: dPoints,
+            dollars_change: dDollars,
+            points: points,
+            dollars: dollars,
+          });
+        }
+        Object.assign(m, { name, avatar, points, dollars });
+      }
     }
     this._saveData();
     this._cancelEdit();
