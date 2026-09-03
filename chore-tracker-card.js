@@ -591,6 +591,9 @@ var TRANSLATIONS = {
     reset_earnings: "Reset Earnings to $0",
     balance_money: "Money ($)",
     adjustment: "Adjustment",
+    streak_field: "Streak (days)",
+    streak_adjusted: "Streak set to {to} (was {from})",
+    streak_hint: "Set the streak if a day was missed because chores weren\u2019t approved in time. This credits the skipped days but does not pay the bonus \u2014 add those points above if it was owed.",
     adjust_hint: "Edit the values above to correct a balance \u2014 the change is logged in the member\u2019s recent activity.",
     reset_completion: "Reset completion",
     unclaim: "Unclaim",
@@ -687,6 +690,9 @@ var TRANSLATIONS = {
     reset_earnings: "Restablecer ganancias a $0",
     balance_money: "Dinero ($)",
     adjustment: "Ajuste",
+    streak_field: "Racha (d\xEDas)",
+    streak_adjusted: "Racha ajustada a {to} (antes {from})",
+    streak_hint: "Ajusta la racha si se perdi\xF3 un d\xEDa porque no se aprobaron las tareas a tiempo. Acredita los d\xEDas omitidos pero no paga el bono; a\xF1ade esos puntos arriba si correspond\xEDa.",
     adjust_hint: "Edita los valores de arriba para corregir un saldo; el cambio queda registrado en la actividad reciente del miembro.",
     reset_completion: "Restablecer estado",
     unclaim: "Liberar",
@@ -783,6 +789,9 @@ var TRANSLATIONS = {
     reset_earnings: "Verdienst auf $0 zur\xFCcksetzen",
     balance_money: "Geld ($)",
     adjustment: "Anpassung",
+    streak_field: "Serie (Tage)",
+    streak_adjusted: "Serie auf {to} gesetzt (vorher {from})",
+    streak_hint: "Setze die Serie, wenn ein Tag fehlt, weil Aufgaben nicht rechtzeitig freigegeben wurden. Die \xFCbersprungenen Tage werden gutgeschrieben, der Bonus aber nicht ausgezahlt \u2014 f\xFCge die Punkte oben hinzu, falls er zustand.",
     adjust_hint: "Werte oben bearbeiten, um ein Guthaben zu korrigieren \u2014 die \xC4nderung wird in den letzten Aktivit\xE4ten des Mitglieds protokolliert.",
     reset_completion: "Status zur\xFCcksetzen",
     unclaim: "Freigeben",
@@ -879,6 +888,9 @@ var TRANSLATIONS = {
     reset_earnings: "Remettre les gains \xE0 0 $",
     balance_money: "Argent ($)",
     adjustment: "Ajustement",
+    streak_field: "S\xE9rie (jours)",
+    streak_adjusted: "S\xE9rie r\xE9gl\xE9e sur {to} (avant {from})",
+    streak_hint: "R\xE9glez la s\xE9rie si un jour a \xE9t\xE9 manqu\xE9 faute d\u2019approbation \xE0 temps. Les jours saut\xE9s sont cr\xE9dit\xE9s mais le bonus n\u2019est pas vers\xE9 \u2014 ajoutez ces points ci-dessus s\u2019il \xE9tait d\xFB.",
     adjust_hint: "Modifiez les valeurs ci-dessus pour corriger un solde \u2014 le changement est enregistr\xE9 dans l\u2019activit\xE9 r\xE9cente du membre.",
     reset_completion: "R\xE9initialiser l\u2019\xE9tat",
     unclaim: "Lib\xE9rer",
@@ -975,6 +987,9 @@ var TRANSLATIONS = {
     reset_earnings: "Verdiensten terugzetten naar $0",
     balance_money: "Geld ($)",
     adjustment: "Aanpassing",
+    streak_field: "Reeks (dagen)",
+    streak_adjusted: "Reeks ingesteld op {to} (was {from})",
+    streak_hint: "Stel de reeks in als een dag is gemist doordat klusjes niet op tijd zijn goedgekeurd. De overgeslagen dagen worden gecrediteerd maar de bonus wordt niet uitbetaald \u2014 voeg die punten hierboven toe als die verschuldigd was.",
     adjust_hint: "Pas de waarden hierboven aan om een saldo te corrigeren \u2014 de wijziging wordt vastgelegd in de recente activiteit van het lid.",
     reset_completion: "Status resetten",
     unclaim: "Vrijgeven",
@@ -1047,7 +1062,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.16.0";
+var CARD_VERSION = "1.17.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1915,6 +1930,7 @@ var ChoreTrackerCard = class extends i4 {
       if (dollars) parts.push(`${dollars > 0 ? "+" : "-"}$${Math.abs(dollars).toFixed(2)}`);
       return parts.join(" ") || "\u2014";
     }
+    if (entry.type === "streak") return "\u{1F525}";
     if (entry.type === "cash") return `-$${num(entry.dollars).toFixed(2)}`;
     return `-\u2B50${num(entry.points)}`;
   }
@@ -2394,7 +2410,11 @@ var ChoreTrackerCard = class extends i4 {
           <input class="form-input" id="em-dollars" type="number" min="0" step="0.01"
             .value=${num(member.dollars).toFixed(2)} />
           ${!isNew ? b2`
+            <label>🔥 ${this._t("streak_field")}</label>
+            <input class="form-input" id="em-streak" type="number" min="0" step="1"
+              .value=${String(this._streakInfo(member).length)} />
             <span class="empty-inline">${this._t("adjust_hint")}</span>
+            <span class="empty-inline">${this._t("streak_hint")}</span>
             ${this._dangerBtn(`reset-earn:${editing}`, this._t("reset_earnings"), () => this._resetMemberEarnings(editing))}
           ` : A}
           <div class="form-actions">
@@ -2413,7 +2433,7 @@ var ChoreTrackerCard = class extends i4 {
             <span class="tab-avatar small-avatar">${m2.avatar || m2.name[0].toUpperCase()}</span>
             <div class="admin-item-info">
               <div class="admin-item-title">${m2.name}</div>
-              <div class="admin-item-meta">⭐ ${m2.points || 0} ${this._t("pts")} · 💵 $${num(m2.dollars).toFixed(2)}</div>
+              <div class="admin-item-meta">⭐ ${m2.points || 0} ${this._t("pts")} · 💵 $${num(m2.dollars).toFixed(2)}${this._streakInfo(m2).length ? ` \xB7 \u{1F525} ${this._streakInfo(m2).length}` : ""}</div>
             </div>
             <div class="admin-item-actions">
               <button class="icon-btn dark" @click=${() => this._setState({ editingMember: m2.id })}>✏️</button>
@@ -2560,6 +2580,35 @@ var ChoreTrackerCard = class extends i4 {
     this._data.rewards = (this._data.rewards || []).filter((r4) => r4.id !== id);
     this._saveData();
     this._setState({ editingReward: null });
+  }
+  // Force a member's streak to a given length. The streak is derived from the
+  // log of completed days, so this back-fills that log over the days chores
+  // were actually scheduled — crediting a day an admin forgot to approve —
+  // then breaks the run just past the target so the length lands exactly.
+  //
+  // Deliberately does NOT pay any streak bonus: an admin typing a number
+  // shouldn't silently mint points. Grant the missed bonus with the points
+  // field alongside it if that's what you want.
+  _setMemberStreak(member, target) {
+    const days = new Set(member.perfectDays || []);
+    const scheduled = (this._data.chores || []).filter((c4) => (c4.assignedTo || []).includes(member.id) && !c4._poolRef && !((c4.memberStates || {})[member.id] || {}).archived);
+    const keys = [];
+    const today = /* @__PURE__ */ new Date();
+    for (let offset = 0; offset < 180 && keys.length < target + 12; offset++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - offset);
+      if (scheduled.some((c4) => isChoreDueOn(c4, day.getDay()))) keys.push(dateKey(day));
+    }
+    keys.slice(0, target).forEach((key) => days.add(key));
+    member.perfectDays = [...days].sort().slice(-120);
+    for (let i5 = target; i5 < keys.length; i5++) {
+      if (this._streakRun(member).length <= target) break;
+      const remaining = new Set(member.perfectDays);
+      remaining.delete(keys[i5]);
+      member.perfectDays = [...remaining].sort();
+    }
+    const run = this._streakRun(member);
+    member.streak = { start: run.start, awarded: Math.floor(run.length / STREAK_DAYS) };
   }
   // ─── DATA MUTATIONS ──────────────────────────────────────────────────────
   _adminLogin() {
@@ -2761,6 +2810,25 @@ var ChoreTrackerCard = class extends i4 {
             points,
             dollars
           });
+        }
+        const streakInput = this._getInput("em-streak");
+        if (streakInput) {
+          const before = this._streakInfo(m2).length;
+          const after = Math.max(0, Math.round(num(streakInput.value)));
+          if (after !== before) {
+            this._setMemberStreak(m2, after);
+            this._logHistory({
+              memberId: m2.id,
+              type: "streak",
+              label: this._t("streak_adjusted", { from: before, to: after }),
+              emoji: "\u{1F525}"
+            });
+            this._fireHAEvent("chore_tracker_streak_adjusted", {
+              member: name,
+              from: before,
+              to: after
+            });
+          }
         }
         Object.assign(m2, { name, avatar, points, dollars });
       }

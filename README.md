@@ -79,6 +79,7 @@ Click the ⚙️ gear icon and enter the admin password to:
 - Manage the Available Chores pool
 - Reset a chore's completion status
 - Adjust a member's points and money directly (corrections are logged)
+- Set a member's streak, for days missed because chores weren't approved in time
 - Reset a member's earnings
 
 Deleting or resetting requires a second confirming tap, so a stray finger can't wipe anything.
@@ -119,6 +120,8 @@ If you'd rather show a family scoreboard, enable **Show everyone's totals at the
 
 Completing **all assigned chores** (extras claimed from the pool don't count) every day for 7 days straight earns **+5 bonus points**, and again for each further 7-day run. Current streaks show as a 🔥 chip on the member's tab and in their wallet.
 
+If a day gets missed because chores weren't approved in time, an admin can **set the streak directly** in Admin → Members. That credits the skipped days so the run isn't lost. It deliberately does *not* pay the bonus — an admin typing a number shouldn't mint points — so if the bonus was genuinely owed, add those points in the same form.
+
 ### Points or money on extra chores
 
 An Available Chore that offers **both** points and a dollar value makes the claimer choose one when they claim it — they earn that reward only, never both. Chores offering just one reward type are claimed with no extra step.
@@ -158,6 +161,7 @@ The card fires events on the Home Assistant bus that you can use as automation t
 | `chore_tracker_reward_redeemed` | Points spent on a reward | `member`, `reward`, `points`, `points_remaining` |
 | `chore_tracker_cash_out` | Earned money cashed out | `member`, `amount` |
 | `chore_tracker_balance_adjusted` | An admin edited a member's points or money | `member`, `points_change`, `dollars_change`, `points`, `dollars` |
+| `chore_tracker_streak_adjusted` | An admin set a member's streak | `member`, `from`, `to` |
 | `chore_tracker_all_done` | A member finishes their whole list | `member`, `total_points`, `total_dollars` |
 
 Example — flash a light when a kid finishes all their chores:

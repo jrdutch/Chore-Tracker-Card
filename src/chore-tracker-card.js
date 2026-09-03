@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.16.0';
+const CARD_VERSION = '1.17.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -923,6 +923,7 @@ class ChoreTrackerCard extends LitElement {
       if (dollars) parts.push(`${dollars > 0 ? '+' : '-'}$${Math.abs(dollars).toFixed(2)}`);
       return parts.join(' ') || '—';
     }
+    if (entry.type === 'streak') return '🔥';
     if (entry.type === 'cash') return `-$${num(entry.dollars).toFixed(2)}`;
     return `-⭐${num(entry.points)}`;
   }
@@ -1433,7 +1434,11 @@ class ChoreTrackerCard extends LitElement {
           <input class="form-input" id="em-dollars" type="number" min="0" step="0.01"
             .value=${num(member.dollars).toFixed(2)} />
           ${!isNew ? html`
+            <label>🔥 ${this._t('streak_field')}</label>
+            <input class="form-input" id="em-streak" type="number" min="0" step="1"
+              .value=${String(this._streakInfo(member).length)} />
             <span class="empty-inline">${this._t('adjust_hint')}</span>
+            <span class="empty-inline">${this._t('streak_hint')}</span>
             ${this._dangerBtn(`reset-earn:${editing}`, this._t('reset_earnings'), () => this._resetMemberEarnings(editing))}
           ` : nothing}
           <div class="form-actions">
@@ -1453,7 +1458,8 @@ class ChoreTrackerCard extends LitElement {
             <span class="tab-avatar small-avatar">${m.avatar || m.name[0].toUpperCase()}</span>
             <div class="admin-item-info">
               <div class="admin-item-title">${m.name}</div>
-              <div class="admin-item-meta">⭐ ${m.points || 0} ${this._t('pts')} · 💵 $${num(m.dollars).toFixed(2)}</div>
+              <div class="admin-item-meta">⭐ ${m.points || 0} ${this._t('pts')} · 💵 $${num(m.dollars).toFixed(2)}${
+                this._streakInfo(m).length ? ` · 🔥 ${this._streakInfo(m).length}` : ''}</div>
             </div>
             <div class="admin-item-actions">
               <button class="icon-btn dark" @click=${() => this._setState({ editingMember: m.id })}>✏️</button>
@@ -1608,6 +1614,48 @@ class ChoreTrackerCard extends LitElement {
     this._data.rewards = (this._data.rewards || []).filter(r => r.id !== id);
     this._saveData();
     this._setState({ editingReward: null });
+  }
+
+  // Force a member's streak to a given length. The streak is derived from the
+  // log of completed days, so this back-fills that log over the days chores
+  // were actually scheduled — crediting a day an admin forgot to approve —
+  // then breaks the run just past the target so the length lands exactly.
+  //
+  // Deliberately does NOT pay any streak bonus: an admin typing a number
+  // shouldn't silently mint points. Grant the missed bonus with the points
+  // field alongside it if that's what you want.
+  _setMemberStreak(member, target) {
+    const days = new Set(member.perfectDays || []);
+    const scheduled = (this._data.chores || []).filter(c =>
+      (c.assignedTo || []).includes(member.id) &&
+      !c._poolRef &&
+      !((c.memberStates || {})[member.id] || {}).archived);
+
+    // Scheduled days, most recent first
+    const keys = [];
+    const today = new Date();
+    for (let offset = 0; offset < 180 && keys.length < target + 12; offset++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - offset);
+      if (scheduled.some(c => isChoreDueOn(c, day.getDay()))) keys.push(dateKey(day));
+    }
+
+    keys.slice(0, target).forEach(key => days.add(key));
+    member.perfectDays = [...days].sort().slice(-120);
+
+    // Clear the days that follow until the derived run actually reads `target`.
+    // More than one may need clearing: today never breaks a run, so zeroing a
+    // streak has to reach past it. Only as many as necessary are touched, so
+    // older history is left intact.
+    for (let i = target; i < keys.length; i++) {
+      if (this._streakRun(member).length <= target) break;
+      const remaining = new Set(member.perfectDays);
+      remaining.delete(keys[i]);
+      member.perfectDays = [...remaining].sort();
+    }
+
+    const run = this._streakRun(member);
+    member.streak = { start: run.start, awarded: Math.floor(run.length / STREAK_DAYS) };
   }
 
   // ─── DATA MUTATIONS ──────────────────────────────────────────────────────
@@ -1839,6 +1887,23 @@ class ChoreTrackerCard extends LitElement {
             points: points,
             dollars: dollars,
           });
+        }
+        const streakInput = this._getInput('em-streak');
+        if (streakInput) {
+          const before = this._streakInfo(m).length;
+          const after = Math.max(0, Math.round(num(streakInput.value)));
+          if (after !== before) {
+            this._setMemberStreak(m, after);
+            this._logHistory({
+              memberId: m.id,
+              type: 'streak',
+              label: this._t('streak_adjusted', { from: before, to: after }),
+              emoji: '🔥',
+            });
+            this._fireHAEvent('chore_tracker_streak_adjusted', {
+              member: name, from: before, to: after,
+            });
+          }
         }
         Object.assign(m, { name, avatar, points, dollars });
       }

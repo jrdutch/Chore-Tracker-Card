@@ -263,6 +263,27 @@ expectHidden.forEach(t => {
 });
 console.log(`Visible today: ${dayCheck.join(', ')}`);
 
+// Verify the streak override lands on exactly the value an admin types,
+// including crediting days that were never approved.
+const streakCheck = await page.evaluate(() => {
+  const el = document.querySelector('chore-tracker-card');
+  const member = el._data.members.find(m => m.id === 'm4');
+  const before = el._streakInfo(member).length;
+  const results = { before, set: {} };
+  for (const target of [7, 12, 3, 0, 5]) {
+    el._setMemberStreak(member, target);
+    results.set[target] = el._streakInfo(member).length;
+  }
+  return results;
+});
+console.log(`Streak override — start ${streakCheck.before}, ` +
+  Object.entries(streakCheck.set).map(([k, v]) => `set ${k}->${v}`).join(', '));
+for (const [target, actual] of Object.entries(streakCheck.set)) {
+  if (String(actual) !== String(target)) {
+    errors.push(`Streak override: asked for ${target} but got ${actual}`);
+  }
+}
+
 await browser.close();
 
 console.log('Screenshots written to tools/shots:');
