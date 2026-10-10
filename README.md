@@ -75,24 +75,33 @@ admin_password: "yourpassword"
 | `title` | `Chore Tracker` | Card title shown in the header |
 | `admin_password` | `1234` | Password for the admin console |
 | `show_family_totals` | `false` | When `true`, the bottom of the card lists every member's points and money. Off by default so only the selected member's totals are visible |
-| `sync_delay_seconds` | `8` | How long the card waits after the last change before syncing to other devices. Saving rebuilds the dashboard view, so a longer delay means a whole run of check-offs costs one reload instead of several. Lower it if you want other devices to update sooner |
 | `require_approval` | `false` | When `true`, marking a chore adds it to a pending list; an admin approves (awards points) or rejects it in the admin console |
 | `language` | *(HA user language)* | UI language override. Built in: `en`, `es`, `de`, `fr`, `nl`. Follows your HA profile language automatically when unset |
-| `storage_key` | *(auto)* | Stable identity for the card's data. Stamped into the config automatically on first save — don't change it, or the card loses track of its data |
-| `lovelace_url_path` | *(auto)* | Only needed if auto-detection of the dashboard fails; set to the dashboard's URL path |
-| `data` | *(managed)* | The card's data store (members, chores, pool). Written by the card itself — don't edit by hand |
+
+Older configs may also contain `storage_key`, `data`, `sync_delay_seconds` or `lovelace_url_path`. With the integration installed these are ignored and can be left alone or deleted — see [Card-only mode](#card-only-mode-no-integration).
 
 ## How data is stored and synced
 
-The card stores everything **inside its own entry in the dashboard configuration**, saved via Home Assistant's websocket API. That makes the data:
+With the integration, all chore data lives in Home Assistant's own storage (`.storage/chore_tracker`), not in your dashboard:
 
-- shared across **all HA user accounts** (parents, kids, wall tablets)
-- shared across **all devices** — phones, browsers, kiosks
-- updated **live**: when someone checks off a chore, other open devices refresh automatically
+- **Shared** across every HA user account and device — parents, kids, phones, wall tablets
+- **Live**: every change is pushed to all open cards through `sensor.chore_tracker_data`, so other devices update within a moment
+- **No dashboard reloads**: the card saves through the `chore_tracker.*` services, never by rewriting the dashboard config, so YAML-mode dashboards work too
+- **Runs without a browser**: midnight resets, streaks and one-off chore cleanup happen in Home Assistant itself, and are caught up at startup if HA was off at midnight
+- **Backed up** with your normal Home Assistant backups
 
-The browser's `localStorage` is used only as a local cache and offline fallback. If a sync save fails (for example on a YAML-mode dashboard, which cannot be written to), the card shows a red warning banner and keeps changes on that device only.
+The browser's `localStorage` is only a local cache for a fast first paint.
 
-> **Note:** YAML-mode dashboards are not supported for sync — the dashboard must be UI-managed (storage mode).
+### Card-only mode (no integration)
+
+If the card is installed without the integration it falls back to 1.x behaviour: data is stored inside the card's entry in the dashboard config (UI-managed dashboards only), and saving rebuilds the dashboard view. In that mode these extra options apply:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `sync_delay_seconds` | `8` | Wait after the last change before saving, so a run of check-offs costs one dashboard reload |
+| `storage_key` | *(auto)* | Stable identity for the card's data — stamped automatically, don't change it |
+| `lovelace_url_path` | *(auto)* | Only if dashboard auto-detection fails |
+| `data` | *(managed)* | The stored dataset — written by the card, don't edit by hand |
 
 ## Admin Console
 
@@ -177,7 +186,7 @@ Streaks understand the schedule too: a day where nothing was scheduled keeps a s
 
 ## Automation events
 
-The card fires events on the Home Assistant bus that you can use as automation triggers:
+Chore Tracker fires events on the Home Assistant bus that you can use as automation triggers (they fire for changes made from the card, services, or automations alike):
 
 | Event | When | Data |
 | --- | --- | --- |
