@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Chore Tracker",
+        "description": "Sets up chore storage so the card no longer writes to your dashboard. Your existing card data is imported automatically the first time the card loads."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Chore Tracker is already set up."
+    }
+  }
+}

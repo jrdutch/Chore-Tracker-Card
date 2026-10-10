@@ -1,6 +1,6 @@
 """Constants for the Family Chores integration."""
 
-DOMAIN = "family_chores"
+DOMAIN = "chore_tracker"
 
 STORAGE_KEY = DOMAIN
 STORAGE_VERSION = 1
@@ -17,6 +17,8 @@ EVENT_ALL_DONE = f"{DOMAIN}_all_done"
 EVENT_STREAK_BONUS = f"{DOMAIN}_streak_bonus"
 EVENT_REWARD_REDEEMED = f"{DOMAIN}_reward_redeemed"
 EVENT_CASH_OUT = f"{DOMAIN}_cash_out"
+EVENT_BALANCE_ADJUSTED = f"{DOMAIN}_balance_adjusted"
+EVENT_STREAK_ADJUSTED = f"{DOMAIN}_streak_adjusted"
 
 # Family-wide rules the server enforces. Presentation options stay on the card.
 DEFAULT_SETTINGS = {

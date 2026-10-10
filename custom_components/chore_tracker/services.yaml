@@ -1,0 +1,465 @@
+# Service definitions for the Chore Tracker integration.
+# Field names match what the card sends.
+
+toggle_chore:
+  name: Toggle a chore
+  description: Toggle a chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    member_id:
+      required: true
+      selector:
+        text:
+
+approve_chore:
+  name: Approve a pending chore
+  description: Approve a pending chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    member_id:
+      required: true
+      selector:
+        text:
+
+reject_chore:
+  name: Reject a pending chore
+  description: Reject a pending chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    member_id:
+      required: true
+      selector:
+        text:
+
+reset_chore:
+  name: Reset a chore's completion
+  description: Reset a chore's completion.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    member_id:
+      required: false
+      selector:
+        text:
+
+add_chore:
+  name: Add a chore
+  description: Add a chore.
+  fields:
+    title:
+      required: true
+      selector:
+        text:
+    emoji:
+      required: false
+      selector:
+        text:
+    points:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    dollars:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    recurrence:
+      required: false
+      selector:
+        text:
+    recurrence_days:
+      required: false
+      selector:
+        object:
+    assigned_to:
+      required: false
+      selector:
+        object:
+
+update_chore:
+  name: Update a chore
+  description: Update a chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    title:
+      required: false
+      selector:
+        text:
+    emoji:
+      required: false
+      selector:
+        text:
+    points:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    dollars:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    recurrence:
+      required: false
+      selector:
+        text:
+    recurrence_days:
+      required: false
+      selector:
+        object:
+    assigned_to:
+      required: false
+      selector:
+        object:
+
+delete_chore:
+  name: Delete a chore
+  description: Delete a chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+
+reorder_chore:
+  name: Move a chore up or down
+  description: Move a chore up or down.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    delta:
+      required: true
+      selector:
+        number:
+          min: 0
+          mode: box
+
+add_pool_chore:
+  name: Add an available chore
+  description: Add an available chore.
+  fields:
+    title:
+      required: true
+      selector:
+        text:
+    emoji:
+      required: false
+      selector:
+        text:
+    points:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    dollars:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+update_pool_chore:
+  name: Update an available chore
+  description: Update an available chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    title:
+      required: false
+      selector:
+        text:
+    emoji:
+      required: false
+      selector:
+        text:
+    points:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    dollars:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+delete_pool_chore:
+  name: Delete an available chore
+  description: Delete an available chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+
+reorder_pool_chore:
+  name: Move an available chore
+  description: Move an available chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    delta:
+      required: true
+      selector:
+        number:
+          min: 0
+          mode: box
+
+claim_pool_chore:
+  name: Claim an available chore
+  description: Claim an available chore.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+    member_id:
+      required: true
+      selector:
+        text:
+    reward_type:
+      required: false
+      selector:
+        text:
+
+unclaim_pool_chore:
+  name: Return a claimed chore to the pool
+  description: Return a claimed chore to the pool.
+  fields:
+    chore_id:
+      required: true
+      selector:
+        text:
+
+add_member:
+  name: Add a family member
+  description: Add a family member.
+  fields:
+    name:
+      required: true
+      selector:
+        text:
+    avatar:
+      required: false
+      selector:
+        text:
+    points:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    dollars:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+update_member:
+  name: Update a member, their balances or streak
+  description: Update a member, their balances or streak.
+  fields:
+    member_id:
+      required: true
+      selector:
+        text:
+    name:
+      required: false
+      selector:
+        text:
+    avatar:
+      required: false
+      selector:
+        text:
+    points:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    dollars:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    streak:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+delete_member:
+  name: Delete a family member
+  description: Delete a family member.
+  fields:
+    member_id:
+      required: true
+      selector:
+        text:
+
+reset_earnings:
+  name: Reset a member's points and money to zero
+  description: Reset a member's points and money to zero.
+  fields:
+    member_id:
+      required: true
+      selector:
+        text:
+
+add_reward:
+  name: Add a reward
+  description: Add a reward.
+  fields:
+    label:
+      required: true
+      selector:
+        text:
+    emoji:
+      required: false
+      selector:
+        text:
+    cost:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+update_reward:
+  name: Update a reward
+  description: Update a reward.
+  fields:
+    reward_id:
+      required: true
+      selector:
+        text:
+    label:
+      required: false
+      selector:
+        text:
+    emoji:
+      required: false
+      selector:
+        text:
+    cost:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+delete_reward:
+  name: Delete a reward
+  description: Delete a reward.
+  fields:
+    reward_id:
+      required: true
+      selector:
+        text:
+
+reorder_reward:
+  name: Move a reward up or down
+  description: Move a reward up or down.
+  fields:
+    reward_id:
+      required: true
+      selector:
+        text:
+    delta:
+      required: true
+      selector:
+        number:
+          min: 0
+          mode: box
+
+redeem_reward:
+  name: Redeem points for a reward
+  description: Redeem points for a reward.
+  fields:
+    member_id:
+      required: true
+      selector:
+        text:
+    reward_id:
+      required: true
+      selector:
+        text:
+
+cash_out:
+  name: Cash out a member's earned money
+  description: Cash out a member's earned money.
+  fields:
+    member_id:
+      required: true
+      selector:
+        text:
+
+set_settings:
+  name: Change family-wide settings
+  description: Change family-wide settings.
+  fields:
+    require_approval:
+      required: false
+      selector:
+        boolean:
+    streak_days:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+    streak_bonus:
+      required: false
+      selector:
+        number:
+          min: 0
+          mode: box
+
+import_data:
+  name: Import data from the pre-2.0 card
+  description: Import data from the pre-2.0 card.
+  fields:
+    data:
+      required: true
+      selector:
+        object:
+    force:
+      required: false
+      selector:
+        boolean:
+
+run_daily_maintenance:
+  name: Run the daily reset now
+  description: Run the daily reset now.
+  fields: {}

@@ -10,7 +10,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "custom_components" / "family_chores"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "custom_components" / "chore_tracker"))
 
 import logic  # noqa: E402
 
@@ -223,6 +223,49 @@ def test_bonus_paid_once_per_seven_days():
 def test_member_with_no_chores_has_no_streak():
     data = base_data()
     assert logic.streak_run(data, data["members"][0], TODAY)["length"] == 0
+
+
+# ── streak override ──────────────────────────────────────────────────────────
+
+def test_set_streak_lands_on_the_requested_value():
+    data = base_data()
+    data["chores"] = [chore(id="c1")]  # daily, so every day is scheduled
+    member = data["members"][0]
+    member["perfectDays"] = [logic.date_key(TODAY - timedelta(days=n)) for n in range(5)]
+    for target in (7, 12, 3, 0, 5):
+        logic.set_streak(data, member, target, TODAY, 7)
+        assert logic.streak_run(data, member, TODAY)["length"] == target, f"target {target}"
+
+
+def test_set_streak_to_zero_reaches_past_today():
+    # Today never breaks a run, so clearing today alone would leave it running
+    data = base_data()
+    data["chores"] = [chore(id="c1")]
+    member = data["members"][0]
+    member["perfectDays"] = [logic.date_key(TODAY - timedelta(days=n)) for n in range(5)]
+    logic.set_streak(data, member, 0, TODAY, 7)
+    assert logic.streak_run(data, member, TODAY)["length"] == 0
+
+
+def test_set_streak_respects_each_members_schedule():
+    # A weekend-only chore: three days of streak means three Saturdays
+    data = base_data()
+    data["chores"] = [chore(id="c1", recurrence="weekly", recurrenceDays=[DOW])]
+    member = data["members"][0]
+    logic.set_streak(data, member, 3, TODAY, 7)
+    assert logic.streak_run(data, member, TODAY)["length"] == 3
+    assert member["perfectDays"] == sorted(
+        logic.date_key(TODAY - timedelta(days=7 * n)) for n in range(3)
+    )
+
+
+def test_set_streak_does_not_pay_a_bonus():
+    data = base_data()
+    data["chores"] = [chore(id="c1")]
+    member = data["members"][0]
+    before = member["points"]
+    logic.set_streak(data, member, 14, TODAY, 7)
+    assert member["points"] == before  # admin edits never mint points
 
 
 # ── money ────────────────────────────────────────────────────────────────────

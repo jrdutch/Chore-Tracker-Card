@@ -242,6 +242,46 @@ def update_streak(
     return bonus
 
 
+def set_streak(data: dict, member: dict, target: int, today: date, streak_days: int) -> None:
+    """Force a member's streak to ``target``.
+
+    The streak is derived from the log of completed days, so this back-fills
+    that log across days chores were actually scheduled — crediting a day an
+    admin forgot to approve — then clears just enough following days for the
+    derived length to match.
+
+    Zeroing needs to reach past today, since today never breaks a run, so the
+    trim is self-correcting rather than clearing a fixed number of days. Older
+    history is left intact.
+    """
+    days = set(member.get("perfectDays") or [])
+    scheduled = [c for c in member_chores_all(data, member["id"]) if not c.get("_poolRef")]
+
+    keys: list[str] = []
+    offset = 0
+    while offset < 180 and len(keys) < target + 12:
+        day = today - timedelta(days=offset)
+        if any(is_chore_due_on(chore, weekday_index(day)) for chore in scheduled):
+            keys.append(date_key(day))
+        offset += 1
+
+    days.update(keys[:target])
+    member["perfectDays"] = sorted(days)[-120:]
+
+    for key in keys[target:]:
+        if streak_run(data, member, today)["length"] <= target:
+            break
+        remaining = set(member["perfectDays"])
+        remaining.discard(key)
+        member["perfectDays"] = sorted(remaining)
+
+    run = streak_run(data, member, today)
+    member["streak"] = {
+        "start": run["start"],
+        "awarded": run["length"] // streak_days if streak_days > 0 else 0,
+    }
+
+
 # ── daily maintenance ────────────────────────────────────────────────────────
 
 def retire_finished_one_offs(data: dict, today: str) -> bool:
