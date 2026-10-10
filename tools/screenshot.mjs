@@ -118,7 +118,7 @@ page.on('pageerror', e => errors.push(String(e)));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 
 await page.setContent(HARNESS);
-await page.addScriptTag({ path: join(root, 'chore-tracker-card.js'), type: 'module' });
+await page.addScriptTag({ path: join(root, 'custom_components', 'chore_tracker', 'www', 'chore-tracker-card.js'), type: 'module' });
 await page.waitForFunction(() => !!customElements.get('chore-tracker-card'));
 
 await page.evaluate((sample) => {
@@ -283,6 +283,72 @@ for (const [target, actual] of Object.entries(streakCheck.set)) {
     errors.push(`Streak override: asked for ${target} but got ${actual}`);
   }
 }
+
+// Integration mode: the card must read the entity and save through the
+// service — never via lovelace/config/save (that's what caused the reload).
+const intCheck = await page.evaluate(async (sample) => {
+  const calls = [];
+  const ws = [];
+  const entity = { entity_id: 'sensor.chore_tracker_data', state: '1',
+    attributes: JSON.parse(JSON.stringify(sample)) };
+  const hass = {
+    locale: { language: 'en' }, language: 'en',
+    states: { 'sensor.chore_tracker_data': entity },
+    callService: async (d, s, data) => { calls.push([d, s, data]); },
+    callWS: async (m) => { ws.push(m.type); return {}; },
+    connection: { subscribeEvents: () => {} },
+  };
+  const el = document.createElement('chore-tracker-card');
+  el.setConfig({ title: 'Int', admin_password: '1', storage_key: 'int-test' });
+  el.hass = hass;
+  document.getElementById('wrap').appendChild(el);
+  await new Promise(r => setTimeout(r, 200));
+  const loadedMembers = el._data.members.length;
+  el._toggleChore('c4', 'm4');
+  await new Promise(r => setTimeout(r, 600));
+  const saveCall = calls.find(c => c[1] === 'save_data');
+  // Simulate another device saving: a fresh entity object arrives
+  const updated = JSON.parse(JSON.stringify(entity.attributes));
+  updated.members[0].name = 'Sarah-from-tablet';
+  el.hass = { ...hass, states: { 'sensor.chore_tracker_data': { ...entity, attributes: updated } } };
+  await new Promise(r => setTimeout(r, 100));
+  const adopted = el._data.members[0].name;
+  el.remove();
+  return { loadedMembers, saved: !!saveCall, ws, adopted,
+           savedToggle: saveCall ? saveCall[2].data.chores.find(c => c.id === 'c4').memberStates.m4.completed : null };
+}, SAMPLE);
+console.log('Integration mode:', JSON.stringify(intCheck));
+if (intCheck.loadedMembers !== 4) errors.push('Integration: did not load members from the entity');
+if (!intCheck.saved) errors.push('Integration: toggle did not call chore_tracker.save_data');
+if (intCheck.savedToggle !== true) errors.push('Integration: saved data did not include the toggle');
+if (intCheck.ws.includes('lovelace/config/save')) errors.push('Integration: still wrote the dashboard config');
+if (intCheck.adopted !== 'Sarah-from-tablet') errors.push('Integration: did not adopt an update from another device');
+
+// First run after installing: empty integration + old dashboard data
+// -> the card must hand the old data to import_data exactly once.
+const importCheck = await page.evaluate(async (sample) => {
+  const calls = [];
+  const hass = {
+    locale: { language: 'en' }, language: 'en',
+    states: { 'sensor.chore_tracker_data': { entity_id: 'sensor.chore_tracker_data', state: '0',
+      attributes: { members: [], chores: [], pool: [], rewards: [], history: [], settings: {} } } },
+    callService: async (d, s, data) => { calls.push(s); },
+    callWS: async () => ({}), connection: { subscribeEvents: () => {} },
+  };
+  const el = document.createElement('chore-tracker-card');
+  el.setConfig({ title: 'Imp', storage_key: 'imp-test', data: sample });
+  el.hass = hass;
+  document.getElementById('wrap').appendChild(el);
+  await new Promise(r => setTimeout(r, 200));
+  el.hass = { ...hass };  // a second hass push must not re-import
+  await new Promise(r => setTimeout(r, 100));
+  const shown = el._data.members.length;
+  el.remove();
+  return { imports: calls.filter(c => c === 'import_data').length, shown };
+}, SAMPLE);
+console.log('Import:', JSON.stringify(importCheck));
+if (importCheck.imports !== 1) errors.push(`Import: expected exactly 1 import_data call, got ${importCheck.imports}`);
+if (importCheck.shown !== 4) errors.push('Import: old data not shown while the import completes');
 
 await browser.close();
 

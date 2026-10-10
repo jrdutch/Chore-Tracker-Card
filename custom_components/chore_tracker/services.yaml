@@ -459,6 +459,15 @@ import_data:
       selector:
         boolean:
 
+save_data:
+  name: Save the card's dataset
+  description: Replace stored data with the card's copy (used by the card).
+  fields:
+    data:
+      required: true
+      selector:
+        object:
+
 run_daily_maintenance:
   name: Run the daily reset now
   description: Run the daily reset now.

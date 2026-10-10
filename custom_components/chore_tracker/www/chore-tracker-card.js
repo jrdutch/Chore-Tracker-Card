@@ -1062,7 +1062,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "1.17.0";
+var CARD_VERSION = "2.0.0";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1230,6 +1230,7 @@ var DEFAULT_CONFIG = {
   admin_password: "1234"
 };
 var UI_STATE = /* @__PURE__ */ new Map();
+var INTEGRATION_ENTITY = "sensor.chore_tracker_data";
 var SCROLL_STATE = /* @__PURE__ */ new Map();
 function findScrollContainer(el) {
   let node = el;
@@ -1275,12 +1276,50 @@ var ChoreTrackerCard = class extends i4 {
   }
   set hass(hass) {
     this._hass = hass;
-    this._subscribeToUpdates();
+    if (!this._integrationEntity()) this._subscribeToUpdates();
     if (!this._initialRenderDone && this._config) {
       this._initialRenderDone = true;
       this._loadData();
       this.requestUpdate();
+      return;
     }
+    this._followIntegration();
+  }
+  // ─── INTEGRATION MODE ───────────────────────────────────────────────────
+  // With the Chore Tracker integration installed, data lives in
+  // sensor.chore_tracker_data and saves go through a service. Nothing is
+  // written to the dashboard, so Home Assistant never rebuilds the view.
+  // Without it, the card falls back to the original dashboard storage.
+  _integrationEntity() {
+    return this._hass?.states?.[INTEGRATION_ENTITY] || null;
+  }
+  _dataFromEntity(entity) {
+    const a3 = JSON.parse(JSON.stringify(entity.attributes || {}));
+    return {
+      members: a3.members || [],
+      chores: a3.chores || [],
+      pool: a3.pool || [],
+      rewards: a3.rewards || [],
+      history: a3.history || [],
+      settings: a3.settings || {}
+    };
+  }
+  // Home Assistant pushes the entity to every device whenever it changes —
+  // that's the live sync. Adopt it unless this device has unsaved changes.
+  _followIntegration() {
+    const entity = this._integrationEntity();
+    if (!entity || entity === this._lastEntity) return;
+    this._lastEntity = entity;
+    if (this._intSaveTimer || this._intSaving) return;
+    const fresh = this._dataFromEntity(entity);
+    if (JSON.stringify(fresh) === JSON.stringify(this._data)) return;
+    const active = this.shadowRoot?.activeElement;
+    if (active && (active.tagName === "INPUT" || active.tagName === "SELECT")) return;
+    this._data = fresh;
+    this.requestUpdate();
+  }
+  get _requireApproval() {
+    return !!(this._config?.require_approval || this._data?.settings?.require_approval);
   }
   get hass() {
     return this._hass;
@@ -1336,6 +1375,22 @@ var ChoreTrackerCard = class extends i4 {
   // Synchronous: reads from config.data (written by _saveData via lovelace/config/save).
   // Falls back to localStorage for pre-v1.2 migration.
   _loadData() {
+    const entity = this._integrationEntity();
+    if (entity) {
+      this._lastEntity = entity;
+      this._data = this._dataFromEntity(entity);
+      const legacy = this._config.data;
+      const hasLegacy = legacy && typeof legacy === "object" && (legacy.members || []).length;
+      if (!this._data.members.length && hasLegacy && !this._importRequested) {
+        this._importRequested = true;
+        this._data = JSON.parse(JSON.stringify({ ...legacy, settings: {} }));
+        this._hass.callService("chore_tracker", "import_data", { data: legacy }).then(() => console.info(`ChoreTracker v${CARD_VERSION}: imported dashboard data into the integration`)).catch((e4) => console.warn("ChoreTracker: import failed \u2014", e4?.message || e4));
+      }
+      console.info(`ChoreTracker v${CARD_VERSION}: using the Chore Tracker integration (no dashboard writes)`);
+      this._seedRewards();
+      this._checkRecurrenceResets();
+      return;
+    }
     if (this._config.data && typeof this._config.data === "object") {
       const d3 = JSON.parse(JSON.stringify(this._config.data));
       this._data = {
@@ -1380,6 +1435,11 @@ var ChoreTrackerCard = class extends i4 {
   _saveData() {
     lsSet(this._storageKey(), JSON.stringify(this._data));
     if (!this._hass) return;
+    if (this._integrationEntity()) {
+      clearTimeout(this._intSaveTimer);
+      this._intSaveTimer = setTimeout(() => this._flushIntegrationSave(), 300);
+      return;
+    }
     clearTimeout(this._saveTimer);
     const delay = Math.max(1, num(this._config.sync_delay_seconds) || 8) * 1e3;
     this._saveTimer = setTimeout(() => {
@@ -1387,11 +1447,29 @@ var ChoreTrackerCard = class extends i4 {
       this._flushSave();
     }, delay);
   }
+  async _flushIntegrationSave() {
+    clearTimeout(this._intSaveTimer);
+    this._intSaveTimer = null;
+    if (!this._hass) return;
+    this._intSaving = true;
+    try {
+      const data = JSON.parse(JSON.stringify(this._data));
+      data.settings = { ...data.settings || {}, require_approval: !!this._config.require_approval };
+      await this._hass.callService("chore_tracker", "save_data", { data });
+      this._setSyncError(null);
+    } catch (e4) {
+      this._setSyncError("sync_failed");
+      console.warn("ChoreTracker: integration save failed \u2014", e4?.message || e4);
+    } finally {
+      this._intSaving = false;
+    }
+  }
   // Don't strand a deferred save if the tab is backgrounded or closed.
   connectedCallback() {
     super.connectedCallback();
     if (!this._flushOnHide) {
       this._flushOnHide = () => {
+        if (this._intSaveTimer) this._flushIntegrationSave();
         if (this._saveTimer) {
           clearTimeout(this._saveTimer);
           this._saveTimer = null;
@@ -1547,6 +1625,7 @@ var ChoreTrackerCard = class extends i4 {
     return !!(active && (active.tagName === "INPUT" || active.tagName === "SELECT"));
   }
   async _refreshFromServer() {
+    if (this._integrationEntity()) return;
     if (this._saving || this._saveTimer || Date.now() - (this._lastLocalSave || 0) < 2e3) return;
     if (this._isUserBusy()) return;
     try {
@@ -1651,7 +1730,7 @@ var ChoreTrackerCard = class extends i4 {
         ...c4,
         completed: ms.completed || false,
         // Only meaningful while approval mode is on — ignore stale flags
-        pending: this._config.require_approval && ms.pending && !ms.completed || false
+        pending: this._requireApproval && ms.pending && !ms.completed || false
       };
     });
   }
@@ -2166,7 +2245,7 @@ var ChoreTrackerCard = class extends i4 {
     const statusIcon = (memberId) => {
       const st = (chore.memberStates || {})[memberId] || {};
       if (st.completed) return "\u2714";
-      if (st.pending && this._config.require_approval) return "\u23F3";
+      if (st.pending && this._requireApproval) return "\u23F3";
       return "\u25A2";
     };
     return b2`
@@ -2323,10 +2402,10 @@ var ChoreTrackerCard = class extends i4 {
         </div>
       `;
     }
-    const pending = this._config.require_approval ? this._pendingApprovals() : [];
+    const pending = this._requireApproval ? this._pendingApprovals() : [];
     return b2`
       <div class="admin-section">
-        ${this._config.require_approval ? b2`
+        ${this._requireApproval ? b2`
           <div class="section-label">⏳ ${this._t("pending_approval")} (${pending.length})</div>
           ${pending.length === 0 ? b2`<div class="empty-inline pending-empty">${this._t("no_pending")}</div>` : A}
           ${pending.map(({ chore, member }) => b2`
@@ -2628,7 +2707,7 @@ var ChoreTrackerCard = class extends i4 {
     if (!chore.memberStates[memberId]) chore.memberStates[memberId] = {};
     const state = chore.memberStates[memberId];
     const member = (this._data.members || []).find((m2) => m2.id === memberId);
-    if (this._config.require_approval) {
+    if (this._requireApproval) {
       if (state.completed) return;
       if (state.pending) {
         state.pending = false;

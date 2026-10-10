@@ -17,7 +17,7 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm run build
-      - run: node --check chore-tracker-card.js
+      - run: node --check custom_components/chore_tracker/www/chore-tracker-card.js
 
   hacs:
     name: HACS validation
@@ -26,4 +26,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hacs/action@main
         with:
-          category: plugin
+          category: integration

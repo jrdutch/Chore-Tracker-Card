@@ -22,7 +22,7 @@ from homeassistant.helpers.entity_registry import async_get as async_get_entity_
 from homeassistant.util import dt as dt_util
 
 from . import logic
-from .const import DOMAIN, HISTORY_ATTR_LIMIT, SIGNAL_DATA_UPDATED
+from .const import DOMAIN, SIGNAL_DATA_UPDATED
 from .store import ChoreTrackerStore
 
 
@@ -119,8 +119,9 @@ class ChoreTrackerDataSensor(ChoreTrackerBase):
             "settings": data.get("settings") or {},
             # Only the tail rides along; the full log stays out of attributes
             # so the payload (and the recorder's row size) stays bounded.
-            "history_recent": history[-HISTORY_ATTR_LIMIT:],
-            "history_count": len(history),
+            # Full log (capped at HISTORY_MAX by the store) — the card saves
+            # the whole dataset back, so it must see all of it.
+            "history": history,
         }
 
 

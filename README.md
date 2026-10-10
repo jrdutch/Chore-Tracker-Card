@@ -16,7 +16,7 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 - **Day-Scheduled Chores** — A chore set for Tuesday and Wednesday only appears on those days; daily and weekday chores reset at your local midnight
 - **Automation Events** — Fires events on the HA bus when chores are completed, so you can automate lights, notifications, and payouts
 - **Visual Editor** — Configure title and password right in the dashboard UI editor, no YAML needed
-- **Cross-device Sync** — Data is stored in the dashboard config, shared by all HA users and devices; changes made on one device appear live on the others
+- **Instant Cross-device Sync** — With the integration, data lives in Home Assistant: every device updates live and checking off chores never reloads the dashboard
 - **Admin Console** — Parent console (password-gated) for managing members, chores, and the pool
 - **Approval Mode** (optional) — Kids mark chores done, but points are only awarded after a parent approves them
 - **Safe Deletes** — Destructive buttons require a second confirming tap
@@ -26,15 +26,41 @@ A Home Assistant custom card for tracking family chores with points and allowanc
 
 ## Installation
 
-### HACS (recommended)
-1. Add this repository as a custom HACS repository (Frontend category)
-2. Install "Chore Tracker Card"
-3. HACS registers the resource automatically
+Chore Tracker is a Home Assistant **integration that bundles its own card**. The integration stores chore data in Home Assistant instead of in your dashboard, so checking off a chore no longer reloads the dashboard, and every device updates instantly.
 
-### Manual
-1. Copy `chore-tracker-card.js` to your `/config/www/` folder
-2. In Home Assistant go to **Settings → Dashboards → Resources**
-3. Add `/local/chore-tracker-card.js` as a JavaScript module
+### HACS (recommended)
+1. HACS → ⋮ → **Custom repositories** → add `https://github.com/jrdutch/Chore-Tracker-Card` with category **Integration**
+2. Install **Chore Tracker**, then **restart Home Assistant**
+3. Settings → Devices & services → **Add integration** → **Chore Tracker**
+4. Add the card to a dashboard (`type: custom:chore-tracker-card`). The card resource is registered for you.
+
+### Upgrading from 1.x
+1. In HACS, remove the old **Frontend** entry for this repository
+2. Settings → Dashboards → ⋮ → **Resources**: delete the old `/hacsfiles/Chore-Tracker-Card/...` entry
+3. Follow the HACS steps above
+
+Your dashboards don't need editing — the card type is unchanged. The first time the card loads, it hands your existing members, chores, points and rewards to the integration automatically. The old data is left in the dashboard config as a safety net.
+
+### Rolling back
+Every 1.x release still has its `chore-tracker-card.js` attached on the Releases page, and the `card-v1` branch holds the last 1.x source.
+
+### Recommended: keep the data sensor out of the recorder
+`sensor.chore_tracker_data` holds the whole dataset in its attributes. Excluding it keeps your database small (the per-member sensors are small and worth recording):
+
+```yaml
+recorder:
+  exclude:
+    entities:
+      - sensor.chore_tracker_data
+```
+
+### Entities
+| Entity | State | Attributes |
+| --- | --- | --- |
+| `sensor.chore_tracker_data` | number of chores | the card's dataset |
+| `sensor.chore_tracker_<member>` | points | dollars, streak_days, chores_done, chores_total, all_done, pending_count |
+
+Every action the card takes is also a service under `chore_tracker.*` (toggle, approve, redeem, cash out, add/update/delete members, chores and rewards, …), so automations and scripts can drive it too.
 
 ## Configuration
 

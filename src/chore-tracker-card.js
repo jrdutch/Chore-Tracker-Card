@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '1.17.0';
+const CARD_VERSION = '2.0.0';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -126,6 +126,9 @@ const DEFAULT_CONFIG = {
 // reload still starts fresh.
 const UI_STATE = new Map();
 
+// Present when the Chore Tracker integration is installed.
+const INTEGRATION_ENTITY = 'sensor.chore_tracker_data';
+
 // Scroll positions captured just before a dashboard save, restored after HA
 // rebuilds the view — so checking off a chore doesn't dump the user back at
 // the top of the page. Per-tab (module scope), so only the tab that saved
@@ -171,12 +174,54 @@ class ChoreTrackerCard extends LitElement {
 
   set hass(hass) {
     this._hass = hass;
-    this._subscribeToUpdates();
+    if (!this._integrationEntity()) this._subscribeToUpdates();
     if (!this._initialRenderDone && this._config) {
       this._initialRenderDone = true;
       this._loadData();
       this.requestUpdate();
+      return;
     }
+    this._followIntegration();
+  }
+
+  // ─── INTEGRATION MODE ───────────────────────────────────────────────────
+  // With the Chore Tracker integration installed, data lives in
+  // sensor.chore_tracker_data and saves go through a service. Nothing is
+  // written to the dashboard, so Home Assistant never rebuilds the view.
+  // Without it, the card falls back to the original dashboard storage.
+  _integrationEntity() {
+    return this._hass?.states?.[INTEGRATION_ENTITY] || null;
+  }
+
+  _dataFromEntity(entity) {
+    const a = JSON.parse(JSON.stringify(entity.attributes || {}));
+    return {
+      members: a.members || [],
+      chores: a.chores || [],
+      pool: a.pool || [],
+      rewards: a.rewards || [],
+      history: a.history || [],
+      settings: a.settings || {},
+    };
+  }
+
+  // Home Assistant pushes the entity to every device whenever it changes —
+  // that's the live sync. Adopt it unless this device has unsaved changes.
+  _followIntegration() {
+    const entity = this._integrationEntity();
+    if (!entity || entity === this._lastEntity) return;
+    this._lastEntity = entity;
+    if (this._intSaveTimer || this._intSaving) return;
+    const fresh = this._dataFromEntity(entity);
+    if (JSON.stringify(fresh) === JSON.stringify(this._data)) return;
+    const active = this.shadowRoot?.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT')) return;
+    this._data = fresh;
+    this.requestUpdate();
+  }
+
+  get _requireApproval() {
+    return !!(this._config?.require_approval || this._data?.settings?.require_approval);
   }
 
   get hass() {
@@ -245,6 +290,27 @@ class ChoreTrackerCard extends LitElement {
   // Synchronous: reads from config.data (written by _saveData via lovelace/config/save).
   // Falls back to localStorage for pre-v1.2 migration.
   _loadData() {
+    const entity = this._integrationEntity();
+    if (entity) {
+      this._lastEntity = entity;
+      this._data = this._dataFromEntity(entity);
+      const legacy = this._config.data;
+      const hasLegacy = legacy && typeof legacy === 'object' && (legacy.members || []).length;
+      if (!this._data.members.length && hasLegacy && !this._importRequested) {
+        // First run after installing the integration: carry the old
+        // dashboard-stored data across. The service refuses if the store
+        // already has data, so this can never double-count.
+        this._importRequested = true;
+        this._data = JSON.parse(JSON.stringify({ ...legacy, settings: {} }));
+        this._hass.callService('chore_tracker', 'import_data', { data: legacy })
+          .then(() => console.info(`ChoreTracker v${CARD_VERSION}: imported dashboard data into the integration`))
+          .catch(e => console.warn('ChoreTracker: import failed —', e?.message || e));
+      }
+      console.info(`ChoreTracker v${CARD_VERSION}: using the Chore Tracker integration (no dashboard writes)`);
+      this._seedRewards();
+      this._checkRecurrenceResets();
+      return;
+    }
     if (this._config.data && typeof this._config.data === 'object') {
       // HA deep-freezes the lovelace config it passes to cards, so clone it
       // to get mutable objects we can update.
@@ -293,6 +359,13 @@ class ChoreTrackerCard extends LitElement {
   _saveData() {
     lsSet(this._storageKey(), JSON.stringify(this._data));
     if (!this._hass) return;
+    if (this._integrationEntity()) {
+      // Short debounce just batches a burst of taps into one call; there's
+      // no reload to avoid any more, so this doesn't need to wait seconds.
+      clearTimeout(this._intSaveTimer);
+      this._intSaveTimer = setTimeout(() => this._flushIntegrationSave(), 300);
+      return;
+    }
     clearTimeout(this._saveTimer);
     // Saving writes the dashboard config, and Home Assistant responds by
     // rebuilding the view — so every save costs a visible reload. We wait
@@ -307,11 +380,30 @@ class ChoreTrackerCard extends LitElement {
     }, delay);
   }
 
+  async _flushIntegrationSave() {
+    clearTimeout(this._intSaveTimer);
+    this._intSaveTimer = null;
+    if (!this._hass) return;
+    this._intSaving = true;
+    try {
+      const data = JSON.parse(JSON.stringify(this._data));
+      data.settings = { ...(data.settings || {}), require_approval: !!this._config.require_approval };
+      await this._hass.callService('chore_tracker', 'save_data', { data });
+      this._setSyncError(null);
+    } catch (e) {
+      this._setSyncError('sync_failed');
+      console.warn('ChoreTracker: integration save failed —', e?.message || e);
+    } finally {
+      this._intSaving = false;
+    }
+  }
+
   // Don't strand a deferred save if the tab is backgrounded or closed.
   connectedCallback() {
     super.connectedCallback();
     if (!this._flushOnHide) {
       this._flushOnHide = () => {
+        if (this._intSaveTimer) this._flushIntegrationSave();
         if (this._saveTimer) {
           clearTimeout(this._saveTimer);
           this._saveTimer = null;
@@ -481,6 +573,7 @@ class ChoreTrackerCard extends LitElement {
   }
 
   async _refreshFromServer() {
+    if (this._integrationEntity()) return;
     // Ignore the echo of our own save
     if (this._saving || this._saveTimer || (Date.now() - (this._lastLocalSave || 0)) < 2000) return;
     if (this._isUserBusy()) return;
@@ -607,7 +700,7 @@ class ChoreTrackerCard extends LitElement {
           ...c,
           completed: ms.completed || false,
           // Only meaningful while approval mode is on — ignore stale flags
-          pending: (this._config.require_approval && ms.pending && !ms.completed) || false,
+          pending: (this._requireApproval && ms.pending && !ms.completed) || false,
         };
       });
   }
@@ -1181,7 +1274,7 @@ class ChoreTrackerCard extends LitElement {
     const statusIcon = (memberId) => {
       const st = (chore.memberStates || {})[memberId] || {};
       if (st.completed) return '✔';
-      if (st.pending && this._config.require_approval) return '⏳';
+      if (st.pending && this._requireApproval) return '⏳';
       return '▢';
     };
 
@@ -1340,11 +1433,11 @@ class ChoreTrackerCard extends LitElement {
       `;
     }
 
-    const pending = this._config.require_approval ? this._pendingApprovals() : [];
+    const pending = this._requireApproval ? this._pendingApprovals() : [];
 
     return html`
       <div class="admin-section">
-        ${this._config.require_approval ? html`
+        ${this._requireApproval ? html`
           <div class="section-label">⏳ ${this._t('pending_approval')} (${pending.length})</div>
           ${pending.length === 0 ? html`<div class="empty-inline pending-empty">${this._t('no_pending')}</div>` : nothing}
           ${pending.map(({ chore, member }) => html`
@@ -1682,7 +1775,7 @@ class ChoreTrackerCard extends LitElement {
     // Approval mode: tapping marks the chore as waiting for an admin.
     // No points are awarded until approval, and an approved (completed)
     // chore can only be undone by an admin reset — not by the member.
-    if (this._config.require_approval) {
+    if (this._requireApproval) {
       if (state.completed) return;
       if (state.pending) {
         state.pending = false; // member changed their mind

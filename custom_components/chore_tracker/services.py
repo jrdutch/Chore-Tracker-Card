@@ -586,6 +586,22 @@ class ChoreTrackerServices:
         await self.store.async_save_now()
         async_dispatcher_send(self.hass, SIGNAL_DATA_UPDATED)
 
+    async def save_data(self, call: ServiceCall) -> None:
+        """Replace the stored dataset with the card's copy.
+
+        The card applies a change locally (so the tap feels instant) and then
+        hands over its whole dataset. That keeps every rule the card already
+        has, and none of it touches the dashboard config.
+        """
+        payload = call.data.get("data") or {}
+        for key in ("members", "chores", "pool", "rewards", "history"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                self.data[key] = value
+        if isinstance(payload.get("settings"), dict):
+            self.data.setdefault("settings", {}).update(payload["settings"])
+        self._commit()
+
     async def run_daily_maintenance(self, call: ServiceCall | None = None) -> None:
         """Recurrence resets, one-off retirement and streak upkeep."""
         changed = logic.check_recurrence_resets(self.data, _today(self.hass))
@@ -722,6 +738,7 @@ SERVICE_SCHEMAS: dict[str, vol.Schema] = {
     "import_data": vol.Schema(
         {vol.Required("data"): dict, vol.Optional("force"): cv.boolean}
     ),
+    "save_data": vol.Schema({vol.Required("data"): dict}),
     "run_daily_maintenance": vol.Schema({}),
 }
 
