@@ -324,6 +324,22 @@ def retire_finished_one_offs(data: dict, today: str) -> bool:
     return changed
 
 
+def release_finished_claims(data: dict) -> bool:
+    """Put Available Chores back in the pool once their claimed copy is gone.
+
+    The member's copy is retired the day after it is finished, so a pool chore
+    becomes claimable again every day. Claims still being worked on (or waiting
+    for approval) keep their copy and stay claimed.
+    """
+    live_refs = {c.get("_poolRef") for c in data.get("chores") or [] if c.get("_poolRef")}
+    changed = False
+    for pool_chore in data.get("pool") or []:
+        if pool_chore.get("claimedBy") and pool_chore.get("id") not in live_refs:
+            pool_chore["claimedBy"] = None
+            changed = True
+    return changed
+
+
 def check_recurrence_resets(data: dict, today: date) -> bool:
     """Reset recurring chores that are due again, and retire finished one-offs.
 
@@ -333,6 +349,7 @@ def check_recurrence_resets(data: dict, today: date) -> bool:
     today_key = date_key(today)
     dow = weekday_index(today)
     changed = retire_finished_one_offs(data, today_key)
+    changed = release_finished_claims(data) or changed
 
     for chore in data.get("chores") or []:
         recurrence = chore.get("recurrence") or RECUR_NONE

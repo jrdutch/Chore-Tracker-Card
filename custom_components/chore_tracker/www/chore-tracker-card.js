@@ -1062,7 +1062,7 @@ function makeLocalizer(lang) {
 }
 
 // src/chore-tracker-card.js
-var CARD_VERSION = "2.0.0";
+var CARD_VERSION = "2.0.1";
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   "color: white; background: #003366; font-weight: 700;",
@@ -1688,10 +1688,25 @@ var ChoreTrackerCard = class extends i4 {
     if (keep.length !== chores.length) this._data.chores = keep;
     return changed;
   }
+  // A claimed Available Chore goes back in the pool once the member's copy
+  // has been retired (the day after it was finished), so it can be claimed
+  // again every day. Unfinished or pending claims keep their copy.
+  _releaseFinishedClaims() {
+    const live = new Set((this._data.chores || []).map((c4) => c4._poolRef).filter(Boolean));
+    let changed = false;
+    (this._data.pool || []).forEach((p3) => {
+      if (p3.claimedBy && !live.has(p3.id)) {
+        p3.claimedBy = null;
+        changed = true;
+      }
+    });
+    return changed;
+  }
   // Auto-reset chores based on recurrence schedule
   _checkRecurrenceResets() {
     const today = todayStr();
     let changed = this._retireFinishedOneOffs(today);
+    changed = this._releaseFinishedClaims() || changed;
     (this._data.chores || []).forEach((chore) => {
       if (!chore.recurrence || chore.recurrence === "none") return;
       (chore.assignedTo || []).forEach((memberId) => {

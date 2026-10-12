@@ -2,7 +2,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { makeLocalizer } from './translations.js';
 
-const CARD_VERSION = '2.0.0';
+const CARD_VERSION = '2.0.1';
 console.info(
   `%c CHORE-TRACKER-CARD %c v${CARD_VERSION} `,
   'color: white; background: #003366; font-weight: 700;',
@@ -644,10 +644,23 @@ class ChoreTrackerCard extends LitElement {
     return changed;
   }
 
+  // A claimed Available Chore goes back in the pool once the member's copy
+  // has been retired (the day after it was finished), so it can be claimed
+  // again every day. Unfinished or pending claims keep their copy.
+  _releaseFinishedClaims() {
+    const live = new Set((this._data.chores || []).map(c => c._poolRef).filter(Boolean));
+    let changed = false;
+    (this._data.pool || []).forEach(p => {
+      if (p.claimedBy && !live.has(p.id)) { p.claimedBy = null; changed = true; }
+    });
+    return changed;
+  }
+
   // Auto-reset chores based on recurrence schedule
   _checkRecurrenceResets() {
     const today = todayStr();
     let changed = this._retireFinishedOneOffs(today);
+    changed = this._releaseFinishedClaims() || changed;
     (this._data.chores || []).forEach(chore => {
       if (!chore.recurrence || chore.recurrence === 'none') return;
       (chore.assignedTo || []).forEach(memberId => {

@@ -284,6 +284,22 @@ def test_num_treats_garbage_as_zero():
     assert logic.num("12.5") == 12.5
 
 
+def test_claimed_pool_chore_is_released_the_next_day():
+    data = {
+        "pool": [{"id": "p1", "claimedBy": "kid"}, {"id": "p2", "claimedBy": "kid"}],
+        "chores": [
+            {"id": "c1", "_poolRef": "p1", "assignedTo": ["kid"], "recurrence": "none",
+             "memberStates": {"kid": {"completed": True, "completedDate": "2026-10-11"}}},
+            {"id": "c2", "_poolRef": "p2", "assignedTo": ["kid"], "recurrence": "none",
+             "memberStates": {}},
+        ],
+    }
+    assert logic.check_recurrence_resets(data, date(2026, 10, 12))
+    assert data["pool"][0]["claimedBy"] is None, "finished claim should be released"
+    assert data["pool"][1]["claimedBy"] == "kid", "unfinished claim should stay"
+    assert [c["id"] for c in data["chores"]] == ["c2"]
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
